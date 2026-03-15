@@ -380,17 +380,24 @@
             closeSettings();
             sendAction('UPDATE_SETTINGS');
         }
-
-        // ==========================================
+// ==========================================
         // 核心通讯大脑：所有的动作，交给云端处理
         // ==========================================
+        
+        // 🚨 【核心修复】新增：防连点全局物理锁
+        let isEngineRunning = false;
+
         async function sendAction(command, action = null) {
+            // 🚨 【核心修复】拦截器：如果云端还在算上一手，直接无视疯狂点击
+            if (isEngineRunning) return; 
+            isEngineRunning = true; 
+
             // 提供轻微的震动反馈
             if (navigator.vibrate && command === 'INPUT') navigator.vibrate(40); 
             
             showLoader();
             
-            // 防误触保护
+            // 防误触保护（让按钮变灰变暗）
             const btnB = document.querySelector('.bg-b'), btnP = document.querySelector('.bg-p');
             if(btnB && btnP) { btnB.classList.add('btn-disabled'); btnP.classList.add('btn-disabled'); }
 
@@ -422,6 +429,10 @@
                 alert("网络异常，指令发送失败！你的状态已安全保存在服务器。请重试。");
             } finally {
                 hideLoader();
+                
+                // 🚨 【核心修复】解锁：云端处理完毕，允许进行下一次点击
+                isEngineRunning = false; 
+                
                 if(btnB && btnP) { 
                     setTimeout(() => {
                         btnB.classList.remove('btn-disabled'); 
