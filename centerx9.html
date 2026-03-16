@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sniper 司令部 - 终端控制</title>
+    <style>
+        :root {
+            --bg: #0d0d0f; --card: #1c1c1e; --text: #ffffff;
+            --accent-blue: #0a84ff; --win-green: #32d74b; --loss-red: #ff453a; --border: #333;
+        }
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        .header { background: #111; padding: 15px 20px; border-bottom: 2px solid var(--accent-blue); display: flex; justify-content: space-between; align-items: center; }
+        .title { font-size: 18px; font-weight: 900; color: var(--accent-blue); letter-spacing: 1px; }
+        .container { padding: 20px; max-width: 1000px; margin: 0 auto; display: none; }
+        .panel { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .panel-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        th { color: #888; padding: 10px; border-bottom: 1px solid #444; }
+        td { padding: 12px 10px; border-bottom: 1px solid #222; }
+        .btn { background: var(--accent-blue); color: #fff; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-add { background: var(--win-green); color: #000; padding: 10px 20px; font-size: 14px; }
+        .btn-danger { background: transparent; border: 1px solid var(--loss-red); color: var(--loss-red); }
+        .btn-extend { background: transparent; border: 1px solid var(--win-green); color: var(--win-green); }
+        .input-box { padding: 10px; background: #2c2c2e; border: 1px solid #444; color: #fff; border-radius: 6px; margin-right: 10px; }
+        .status-active { color: var(--win-green); font-weight: bold; }
+        .status-expired { color: var(--loss-red); font-weight: bold; }
+        #loginLayer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { width: 300px; text-align: center; background: #1c1c1e; padding: 30px; border-radius: 12px; border: 1px solid var(--accent-blue); }
+        .login-input { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #444; color: #fff; box-sizing: border-box; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <div id="loginLayer">
+        <div class="login-box">
+            <h2 style="color:var(--accent-blue); margin-top:0;">司令部接入</h2>
+            <input type="text" id="adminU" class="login-input" placeholder="最高指挥官账号">
+            <input type="password" id="adminP" class="login-input" placeholder="访问密钥">
+            <button class="btn" style="width:100%; padding:12px; font-size:16px; margin-top:10px;" onclick="adminLogin()">授权进入</button>
+            <div id="msg" style="color:var(--loss-red); margin-top:10px; font-size: 12px;"></div>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="title">💠 SNIPER COMMAND CENTER</div>
+        <button class="btn btn-danger" onclick="location.reload()">断开连接</button>
+    </div>
+
+    <div class="container" id="dashboard">
+        <div class="panel">
+            <div class="panel-title">👥 人员配给与权限统筹</div>
+            <div style="margin-bottom: 20px; background: #000; padding: 15px; border-radius: 8px; border: 1px dashed #444;">
+                <input type="text" id="newUsername" class="input-box" placeholder="新徒弟账号">
+                <input type="text" id="newPassword" class="input-box" placeholder="初始密码">
+                <button class="btn btn-add" onclick="manageUser('ADD')">➕ 发行新卡 (默认30天)</button>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>账号</th><th>角色</th><th>授权到期日</th><th>状态</th><th>战术操作</th></tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">👁️‍🗨️ X光级实时实战流水 (全局最近 50 手)</div>
+            <table>
+                <thead>
+                    <tr><th>时间</th><th>徒弟账号</th><th>期数</th><th>下注动作</th><th>该手盈亏</th><th>全局总盈亏</th></tr>
+                </thead>
+                <tbody id="logsTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 🚨 绝对核心：已经自动瞄准你的 Render 后厨
+        const API_URL = "https://quant-o79q.onrender.com"; 
+        
+        let ADMIN_CRED = { u: '', p: '' };
+
+        async function adminLogin() {
+            ADMIN_CRED.u = document.getElementById('adminU').value;
+            ADMIN_CRED.p = document.getElementById('adminP').value;
+            document.getElementById('msg').innerText = "验证密钥中...";
+            
+            try {
+                const res = await fetch(API_URL + '/api/admin/data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: ADMIN_CRED.u, password: ADMIN_CRED.p })
+                });
+
+                if (res.ok) {
+                    document.getElementById('loginLayer').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    fetchDashboardData();
+                    setInterval(fetchDashboardData, 10000); // 10秒自动刷新流水
+                } else {
+                    document.getElementById('msg').innerText = "无权限，非法访问！";
+                }
+            } catch (err) {
+                document.getElementById('msg').innerText = "网络阻断，无法连接服务器。";
+            }
+        }
+
+        async function fetchDashboardData() {
+            const res = await fetch(API_URL + '/api/admin/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: ADMIN_CRED.u, password: ADMIN_CRED.p })
+            });
+            const data = await res.json();
+            
+            let usersHtml = "";
+            data.users.forEach(u => {
+                let expiryDate = new Date(u.valid_until);
+                let isExpired = expiryDate < new Date();
+                let statusText = u.role === 'admin' ? '<span style="color:#ffd700">永生</span>' : (isExpired ? '<span class="status-expired">已到期(封控)</span>' : '<span class="status-active">许可中</span>');
+                
+                usersHtml += `<tr>
+                    <td>${u.id}</td><td style="font-weight:bold; color:#fff">${u.username}</td>
+                    <td>${u.role}</td><td>${u.role==='admin' ? '永久' : expiryDate.toLocaleDateString()}</td>
+                    <td>${statusText}</td>
+                    <td>
+                        ${u.role !== 'admin' ? `
+                            <button class="btn btn-extend" onclick="manageUser('EXTEND', '${u.username}')">续费30天</button>
+                            <button class="btn btn-danger" style="margin-left:5px;" onclick="manageUser('DELETE', '${u.username}')">拔管(封号)</button>
+                        ` : '-'}
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('usersTableBody').innerHTML = usersHtml;
+
+            let logsHtml = "";
+            data.logs.forEach(l => {
+                let logTime = new Date(l.created_at).toLocaleTimeString();
+                let plColor = l.profit_loss > 0 ? "var(--win-green)" : (l.profit_loss < 0 ? "var(--loss-red)" : "#888");
+                let tplColor = l.total_pl > 0 ? "var(--win-green)" : (l.total_pl < 0 ? "var(--loss-red)" : "#fff");
+                
+                logsHtml += `<tr>
+                    <td style="color:#888">${logTime}</td>
+                    <td style="color:var(--accent-blue); font-weight:bold;">${l.username}</td>
+                    <td>G${l.group_num}</td><td>${l.action}</td>
+                    <td style="color:${plColor}; font-weight:bold;">${l.profit_loss > 0 ? '+'+l.profit_loss : l.profit_loss}</td>
+                    <td style="color:${tplColor}; font-weight:bold;">${l.total_pl}</td>
+                </tr>`;
+            });
+            document.getElementById('logsTableBody').innerHTML = logsHtml;
+        }
+
+        async function manageUser(action, targetUser = null) {
+            let reqBody = { username: ADMIN_CRED.u, password: ADMIN_CRED.p, manageAction: action };
+            
+            if (action === 'ADD') {
+                reqBody.targetUser = document.getElementById('newUsername').value;
+                reqBody.newPassword = document.getElementById('newPassword').value;
+                if (!reqBody.targetUser || !reqBody.newPassword) return alert("账号和密码不能为空！");
+            } else if (action === 'DELETE') {
+                if(!confirm(`确定要彻底删除徒弟 [${targetUser}] 的账号和所有数据吗？此操作不可逆！`)) return;
+                reqBody.targetUser = targetUser;
+            } else if (action === 'EXTEND') {
+                reqBody.targetUser = targetUser;
+            }
+
+            try {
+                const res = await fetch(API_URL + '/api/admin/manage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reqBody)
+                });
+                if(res.ok) {
+                    document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = '';
+                    fetchDashboardData(); 
+                } else { alert("操作失败！可能是账号已存在。"); }
+            } catch(e) { alert("网络异常"); }
+        }
+    </script>
+</body>
+</html>
