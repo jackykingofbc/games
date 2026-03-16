@@ -5,167 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sniper Max (极速版)</title>
     <style>
-        :root {
-            --bg: #000000;
-            --card: #1c1c1e;
-            --text: #ffffff;
-            --accent: #ffd700;
-            --win: #32d74b;
-            --loss: #ff453a;
-            --border: #333;
-            --banker-bg: #ff453a;
-            --player-bg: #0a84ff;
-            --wait-bg: #555555;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0; padding: 0;
-            min-height: 100vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 10000;
-            display: none; justify-content: center; align-items: center;
-            color: var(--accent); font-weight: bold; font-size: 18px;
-            backdrop-filter: blur(5px);
-        }
-
-        .overlay-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-        }
-        .modal-box { 
-            width: 85%; max-width: 340px; text-align: center; 
-            background: #1c1c1e; padding: 25px 20px; 
-            border-radius: 16px; border: 1px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        .modal-input {
-            width: 100%; padding: 12px; margin: 8px 0 15px 0;
-            background: #2c2c2e; border: 1px solid #444; color: #fff;
-            border-radius: 8px; box-sizing: border-box; font-size: 14px;
-            outline: none;
-        }
+        :root { --bg: #000000; --card: #1c1c1e; --text: #ffffff; --accent: #ffd700; --win: #32d74b; --loss: #ff453a; --border: #333; --banker-bg: #ff453a; --player-bg: #0a84ff; --wait-bg: #555555; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; -webkit-user-select: none; user-select: none; }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: none; justify-content: center; align-items: center; color: var(--accent); font-weight: bold; font-size: 18px; backdrop-filter: blur(5px); }
+        .overlay-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+        .modal-box { width: 85%; max-width: 340px; text-align: center; background: #1c1c1e; padding: 25px 20px; border-radius: 16px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal-input { width: 100%; padding: 12px; margin: 8px 0 15px 0; background: #2c2c2e; border: 1px solid #444; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none; }
         .modal-input:focus { border-color: var(--accent); }
         .modal-label { text-align: left; color: #aaa; font-size: 13px; font-weight: bold; margin-left: 2px; margin-bottom: 5px; }
-        .modal-btn {
-            width: 100%; padding: 14px; background: var(--accent);
-            color: #000; font-weight: 800; border: none;
-            border-radius: 8px; font-size: 16px; margin-top: 10px;
-            cursor: pointer;
-        }
+        .modal-btn { width: 100%; padding: 14px; background: var(--accent); color: #000; font-weight: 800; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; cursor: pointer; }
         .btn-cancel { background: #444; color: #fff; }
-
         #appLayer { display: none; min-height: 100vh; flex-direction: column; }
-
-        .header {
-            padding: 10px 15px; background: #111;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 999;
-        }
-        .app-title { 
-            font-weight: 800; font-size: 15px; color: #aaa; letter-spacing: 0.5px; 
-            position: absolute; left: 0; width: 100%; text-align: center; 
-            pointer-events: none; z-index: 1;
-        }
+        .header { padding: 10px 15px; background: #111; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 999; }
+        .app-title { font-weight: 800; font-size: 15px; color: #aaa; letter-spacing: 0.5px; position: absolute; left: 0; width: 100%; text-align: center; pointer-events: none; z-index: 1; }
         .btn-group-top { display: flex; gap: 8px; z-index: 2; }
-        .btn-small {
-            background: #333; color: #ccc; border: none;
-            padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-save { color: var(--accent); }
+        .btn-small { background: #333; color: #ccc; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-reset { color: var(--loss); }
         .btn-logout { background: transparent; border: 1px solid #666; color: #aaa; }
-        .btn-setting { background: transparent; border: 1px solid #555; color: #fff; }
-
+        .btn-setting { background: transparent; border: 1px solid #555; color: #fff; display: none; /* 默认隐藏，有权限才显示 */ }
         .dashboard { padding: 10px; background: var(--card); flex-shrink: 0; }
         .pl-display-area { text-align: center; padding: 5px 0 10px 0; }
         .pl-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
         .pl-value { font-size: 36px; font-weight: 900; font-family: monospace; line-height: 1.1; }
-        
         .comm-row { text-align: center; font-size: 12px; color: #666; margin-bottom: 10px; }
-        
         .cum-scores-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
-        .cum-item { 
-            background: #2c2c2e; border-radius: 8px; padding: 6px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        .cum-item { background: #2c2c2e; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .cum-label { font-size: 11px; color: #aaa; margin-bottom: 2px; font-weight: bold; text-align: center; }
         .cum-val-box { display: flex; align-items: baseline; gap: 3px; }
         .cum-val { font-size: 16px; font-weight: bold; }
         .cum-rate { font-size: 10px; color: #888; }
-
         .reg-progress-area { margin-bottom: 8px; padding: 0 4px; }
         .reg-label-row { display: flex; justify-content: space-between; font-size: 10px; color: #888; margin-bottom: 4px; font-weight: bold; }
         .reg-bar-bg { height: 6px; background: #333; border-radius: 3px; overflow: hidden; border: 1px solid #444; }
         .reg-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent) 0%, var(--win) 100%); box-shadow: 0 0 8px rgba(50, 215, 75, 0.2); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-
-        .labouchere-display {
-            background: #111; border: 1px dashed #444; border-radius: 8px;
-            padding: 8px; margin-bottom: 8px; text-align: center;
-            font-size: 16px; color: var(--accent); font-family: monospace; font-weight: bold;
-            display: none; word-wrap: break-word; letter-spacing: 1px;
-        }
+        .labouchere-display { background: #111; border: 1px dashed #444; border-radius: 8px; padding: 8px; margin-bottom: 8px; text-align: center; font-size: 16px; color: var(--accent); font-family: monospace; font-weight: bold; display: none; word-wrap: break-word; letter-spacing: 1px; }
         .labouchere-label { font-size: 10px; color: #888; display: block; margin-bottom: 4px; letter-spacing: normal; font-family: -apple-system, sans-serif; font-weight: normal; }
-
         .dual-core-container { display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
         .core-box { background: #111; border: 1px dashed #555; border-radius: 8px; padding: 8px; text-align: center; position: relative; }
         .core-title { font-size: 11px; color: #aaa; margin-bottom: 4px; font-weight: bold;}
         .core-seq { font-size: 14px; font-family: monospace; color: var(--accent); font-weight: bold; word-wrap: break-word;}
         .core-pl { font-size: 12px; font-weight: bold; margin-top: 5px; }
-
-        .sys-log-box {
-            background: rgba(0,0,0,0.3); border-left: 3px solid #0a84ff; padding: 6px 10px;
-            font-size: 11px; color: #ccc; margin-bottom: 8px; height: 45px; overflow-y: auto;
-            border-radius: 0 8px 8px 0; display: flex; flex-direction: column; justify-content: flex-end;
-        }
+        .sys-log-box { background: rgba(0,0,0,0.3); border-left: 3px solid #0a84ff; padding: 6px 10px; font-size: 11px; color: #ccc; margin-bottom: 8px; height: 45px; overflow-y: auto; border-radius: 0 8px 8px 0; display: flex; flex-direction: column; justify-content: flex-end; }
         .log-entry { margin-top: 2px; }
-
         .instr-card { background: linear-gradient(135deg, #3a3a3c, #2c2c2e); border: 1px solid #444; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 10px; }
         .phase-text { font-size: 12px; color: #aaa; margin-bottom: 5px; }
         .main-instr { font-size: 28px; font-weight: 900; line-height: 1.2; display: flex; justify-content: center; align-items: baseline; gap: 10px; }
-        
         .wl-container { background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
         .wl-stats { font-size: 11px; color: #888; margin-bottom: 6px; border-bottom: 1px solid #222; padding-bottom: 4px; display: flex; justify-content: space-between; }
         .wl-list { display: flex; flex-wrap: wrap; gap: 4px; font-size: 14px; min-height: 20px; max-height: 60px; overflow-y: auto; align-content: flex-start; }
         .wl-item-win { color: var(--win); }
         .wl-item-loss { color: var(--loss); }
-
         .side-B { color: var(--banker-bg); }
         .side-P { color: var(--player-bg); }
         .side-Wait { color: #888; }
-
         .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        
-        .btn-big {
-            padding: 18px; border: none; border-radius: 10px; font-size: 20px; font-weight: bold; color: white;
-            box-shadow: 0 6px 0 rgba(0,0,0,0.4); transition: all 0.05s ease; cursor: pointer;
-            outline: none; -webkit-tap-highlight-color: transparent; position: relative; top: 0;
-        }
+        .btn-big { padding: 18px; border: none; border-radius: 10px; font-size: 20px; font-weight: bold; color: white; box-shadow: 0 6px 0 rgba(0,0,0,0.4); transition: all 0.05s ease; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; position: relative; top: 0; }
         .bg-b { background: var(--banker-bg); }
         .bg-p { background: var(--player-bg); }
-        
         .btn-big:active { transform: scale(0.95); box-shadow: 0 2px 0 rgba(0,0,0,0.4); filter: brightness(0.7); top: 4px; }
         .btn-disabled { filter: grayscale(100%) opacity(0.5) !important; pointer-events: none; box-shadow: none !important; top: 4px !important; transform: scale(0.98); }
-
         .table-wrap { flex-grow: 1; background: #000; border-top: 1px solid var(--border); padding-bottom: 40px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; table-layout: fixed; }
         th { color: #888; padding: 8px 2px; font-weight: bold; border-bottom: 1px solid #333; font-size: 12px; position: sticky; top: 44px; background: #1a1a1a; z-index: 10; }
         td { padding: 10px 2px; border-bottom: 1px solid #222; color: #ddd; }
-
         .win-color { color: var(--win); }
         .loss-color { color: var(--loss); }
         .wait-color { color: #888; }
@@ -173,7 +75,7 @@
 </head>
 <body>
     
-    <div id="loader">⚡ 引擎计算中...</div>
+    <div id="loader">⚡ 引擎连接中...</div>
 
     <div id="loginLayer" class="overlay-layer">
         <div class="modal-box">
@@ -188,15 +90,9 @@
     <div id="settingsLayer" class="overlay-layer" style="display:none;">
         <div class="modal-box">
             <h3 style="color:#fff; margin-top:0; border-bottom:1px solid #333; padding-bottom:10px;">⚙️ 云端战术套餐设置</h3>
-            <div class="modal-label">⚔️ 一键切换战术组</div>
+            <div class="modal-label">⚔️ 您被允许的战术组</div>
             <select id="selStrategy" class="modal-input">
-                <option value="2_fib">套餐 1：2连触发 + 斐波那契 (断尾记忆清零版)</option>
-                <option value="3_martingale">套餐 2：3连触发 (AAA/BBB) + 马丁格尔</option>
-                <option value="hand_martingale">套餐 3：连续手拦截 (000/0011) + 马丁格尔</option>
-                <option value="2_labouchere">套餐 4：2连触发 (AA/BB) + 拉布谢尔</option>
-                <option value="5_labouchere">套餐 5：大路四式接力 (单双) + 拉布谢尔</option>
-                <option value="6_labouchere">套餐 6：双核对冲引擎 (策4 + 策5 并发)</option>
-            </select>
+                </select>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="modal-btn btn-cancel" onclick="closeSettings()">取 消</button>
                 <button class="modal-btn" onclick="applySettings()">保存并重置云端</button>
@@ -207,7 +103,7 @@
     <div id="appLayer">
         <div class="header">
             <div style="display:flex; gap:8px; z-index:2;">
-                <button class="btn-small btn-setting" onclick="openSettings()">⚙️ 策略</button>
+                <button class="btn-small btn-setting" id="btnSetting" onclick="openSettings()">⚙️ 策略</button>
             </div>
             <span class="app-title">Sniper Pro</span>
             <div class="btn-group-top">
@@ -300,6 +196,15 @@
         let currentTriggerMode = 2;
         let currentBettingMode = 'fib';
 
+        const ALL_STRATEGIES = [
+            { id: 1, val: '2_fib', label: '套餐 1：2连触发 + 斐波那契' },
+            { id: 2, val: '3_martingale', label: '套餐 2：3连触发 + 马丁格尔' },
+            { id: 3, val: 'hand_martingale', label: '套餐 3：连续手拦截 + 马丁格尔' },
+            { id: 4, val: '2_labouchere', label: '套餐 4：2连触发 + 拉布谢尔' },
+            { id: 5, val: '5_labouchere', label: '套餐 5：大路四式接力 + 拉布谢尔' },
+            { id: 6, val: '6_labouchere', label: '套餐 6：双核对冲引擎' }
+        ];
+
         window.onload = function() {
             if (localStorage.getItem('bacc_cloud_logged_in') === 'true') {
                 CRED.u = localStorage.getItem('bacc_u');
@@ -324,11 +229,7 @@
                 const response = await fetch(API_URL + '/api/action', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        username: CRED.u, password: CRED.p, 
-                        command: 'STATUS_CHECK', 
-                        triggerMode: currentTriggerMode, bettingMode: currentBettingMode 
-                    })
+                    body: JSON.stringify({ username: CRED.u, password: CRED.p, command: 'STATUS_CHECK', triggerMode: currentTriggerMode, bettingMode: currentBettingMode })
                 });
                 if (response.ok) {
                     const data = await response.json();
@@ -343,28 +244,17 @@
             } catch (error) {
                 console.error(error);
                 document.getElementById('msg').innerText = "连接服务器失败，请检查网络或后厨状态";
-            } finally {
-                hideLoader();
-            }
+            } finally { hideLoader(); }
         }
 
-        function enterApp() { 
-            document.getElementById('loginLayer').style.display = 'none'; 
-            document.getElementById('appLayer').style.display = 'flex'; 
-        }
-
-        function logout() { 
-            if(confirm("确定要登出当前账号并切换吗？")) { 
-                localStorage.removeItem('bacc_cloud_logged_in'); 
-                localStorage.removeItem('bacc_u'); 
-                localStorage.removeItem('bacc_p'); 
-                CRED = { u: '', p: '' };
-                location.reload(); 
-            } 
-        }
-
+        function enterApp() { document.getElementById('loginLayer').style.display = 'none'; document.getElementById('appLayer').style.display = 'flex'; }
+        function logout() { if(confirm("确定要登出当前账号并切换吗？")) { localStorage.removeItem('bacc_cloud_logged_in'); localStorage.removeItem('bacc_u'); localStorage.removeItem('bacc_p'); CRED = { u: '', p: '' }; location.reload(); } }
+        
         function openSettings() { 
-            document.getElementById('selStrategy').value = (currentTriggerMode === 5 || currentTriggerMode === 6 ? currentTriggerMode : currentTriggerMode) + '_' + currentBettingMode; 
+            let curVal = (currentTriggerMode === 5 || currentTriggerMode === 6 ? currentTriggerMode : currentTriggerMode) + '_' + currentBettingMode; 
+            let sel = document.getElementById('selStrategy');
+            let hasCurrent = Array.from(sel.options).some(opt => opt.value === curVal);
+            if(hasCurrent) sel.value = curVal;
             document.getElementById('settingsLayer').style.display = 'flex'; 
         }
 
@@ -380,21 +270,14 @@
             sendAction('UPDATE_SETTINGS');
         }
 
-        // ==========================================
-        // 🚀 核心通讯大脑：无黑屏极速版
-        // ==========================================
         let isEngineRunning = false;
 
         async function sendAction(command, action = null) {
             if (isEngineRunning) return; 
             isEngineRunning = true; 
-
             if (navigator.vibrate && command === 'INPUT') navigator.vibrate(40); 
             
-            // 只有重置和登录检测时才显示遮罩，平时打牌纯靠按键变暗防连点，消灭黑屏卡顿感
-            if (command !== 'INPUT' && command !== 'UNDO') {
-                showLoader();
-            }
+            if (command !== 'INPUT' && command !== 'UNDO') showLoader();
             
             const btnB = document.querySelector('.bg-b'), btnP = document.querySelector('.bg-p');
             if(btnB && btnP) { btnB.classList.add('btn-disabled'); btnP.classList.add('btn-disabled'); }
@@ -403,14 +286,7 @@
                 const response = await fetch(API_URL + '/api/action', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: CRED.u,
-                        password: CRED.p,
-                        command: command,
-                        action: action,
-                        triggerMode: currentTriggerMode,
-                        bettingMode: currentBettingMode
-                    })
+                    body: JSON.stringify({ username: CRED.u, password: CRED.p, command: command, action: action, triggerMode: currentTriggerMode, bettingMode: currentBettingMode })
                 });
 
                 if (response.status === 401 || response.status === 403) {
@@ -428,23 +304,32 @@
             } finally {
                 hideLoader(); 
                 isEngineRunning = false; 
-                
-                // 仅需 50 毫秒恢复按键，极致跟手响应
-                if(btnB && btnP) { 
-                    setTimeout(() => {
-                        btnB.classList.remove('btn-disabled'); 
-                        btnP.classList.remove('btn-disabled');
-                    }, 50); 
-                }
+                if(btnB && btnP) { setTimeout(() => { btnB.classList.remove('btn-disabled'); btnP.classList.remove('btn-disabled'); }, 50); }
             }
         }
 
-        // ==========================================
-        // 纯净的画皮工具（Render UI）
-        // ==========================================
         function renderUI(S) {
             window.requestAnimationFrame(() => {
                 if(!S) return;
+                
+                // 🚀 【权限渲染核心】：根据云端下发的权限，决定是否显示设置按钮和下拉菜单
+                if (S._role) {
+                    let allowedArr = S._role === 'admin' ? ["1","2","3","4","5","6"] : (S._allowedStrategies ? S._allowedStrategies.split(',').map(s=>s.trim()) : []);
+                    let sel = document.getElementById('selStrategy');
+                    let newHtml = '';
+                    let hasAny = false;
+                    
+                    ALL_STRATEGIES.forEach(str => {
+                        if (allowedArr.includes(str.id.toString())) {
+                            newHtml += `<option value="${str.val}">${str.label}</option>`;
+                            hasAny = true;
+                        }
+                    });
+                    
+                    if (sel.innerHTML !== newHtml) sel.innerHTML = newHtml;
+                    document.getElementById('btnSetting').style.display = hasAny ? 'block' : 'none';
+                }
+
                 const wins = (S.wlHistory || []).filter(x => x === '✅').length; 
                 const losses = (S.wlHistory || []).filter(x => x === '❌').length;
                 
@@ -452,19 +337,9 @@
                 document.getElementById('totalPL').className = S.totalPL > 0 ? 'pl-value win-color' : (S.totalPL < 0 ? 'pl-value loss-color' : 'pl-value');
                 
                 let statusLabel = document.getElementById('gameStatusLabel');
-                
-                if (S.gameStatus === 'WON') { 
-                    statusLabel.innerText = "🎉 挑战成功 - 请点击重置开启新局"; 
-                    statusLabel.style.color = "var(--win)"; 
-                } 
-                else if (S.gameStatus === 'STREAK_LIMIT') { 
-                    statusLabel.innerText = "🛑 形态极限 - 请点击重置"; 
-                    statusLabel.style.color = "var(--accent)"; 
-                } 
-                else if (S.gameStatus === 'GAMEOVER') { 
-                    statusLabel.innerText = "⚠️ 游戏结束 - 周期窗口耗尽"; 
-                    statusLabel.style.color = "var(--loss)"; 
-                } 
+                if (S.gameStatus === 'WON') { statusLabel.innerText = "🎉 挑战成功 - 请点击重置开启新局"; statusLabel.style.color = "var(--win)"; } 
+                else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 形态极限 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
+                else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 游戏结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
                 else {
                     if (S.triggerMode === 6) { statusLabel.innerText = "🟣 套餐6 (云端守护中) - 双核对冲"; }
                     else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 套餐5 (云端守护中) - 大路四式"; } 
@@ -489,19 +364,10 @@
                 } else {
                     dualBox.style.display = 'none';
                     if (S.bettingMode === 'labouchere') { 
-                        labBox.style.display = 'block'; 
-                        document.getElementById('lblFibLevel').innerText = '消数余量'; 
-                        document.getElementById('fibLevel').innerText = S.labouchereSeq.length + '项';
-                        document.getElementById('fibLevel').className = 'cum-val';
-                        document.getElementById('labouchereSeqText').innerText = S.labouchereSeq.length > 0 ? S.labouchereSeq.join(' - ') : '已清空 (等待重置)'; 
-                    } 
-                    else { 
-                        labBox.style.display = 'none'; 
-                        document.getElementById('lblFibLevel').innerText = S.bettingMode === 'martingale' ? '注码(马丁)' : '注码(斐波)'; 
-                        document.getElementById('fibLevel').innerText = S.fibIdx;
-                        document.getElementById('fibLevel').className = 'cum-val';
+                        labBox.style.display = 'block'; document.getElementById('lblFibLevel').innerText = '消数余量'; document.getElementById('fibLevel').innerText = S.labouchereSeq.length + '项'; document.getElementById('fibLevel').className = 'cum-val'; document.getElementById('labouchereSeqText').innerText = S.labouchereSeq.length > 0 ? S.labouchereSeq.join(' - ') : '已清空 (等待重置)'; 
+                    } else { 
+                        labBox.style.display = 'none'; document.getElementById('lblFibLevel').innerText = S.bettingMode === 'martingale' ? '注码(马丁)' : '注码(斐波)'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
                     }
-                    
                     if (S.triggerMode === 5) {
                         document.getElementById('lblTrigger').innerText = '当前目标'; document.getElementById('targetProp').innerText = S.macroTarget ? (S.macroTarget === 'D' ? '抓 [双]' : '抓 [单]') : "观望找信号"; document.getElementById('targetProp').className = S.macroTarget ? 'cum-val win-color' : 'cum-val wait-color';
                         document.getElementById('lblStreak').innerText = '宏观阵型'; let macros = S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单'); document.getElementById('streakCount').innerText = macros.length > 0 ? macros.slice(-3).join('') : '-'; document.getElementById('streakRate').style.display = 'none';
@@ -512,31 +378,13 @@
                         document.getElementById('lblProgress').innerText = '连续手流水线追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else {
                         document.getElementById('lblTrigger').innerText = S.triggerMode === 3 ? '目标(3连触发)' : '目标(2连触发)'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'A (打0)':'B (打1)') : "无"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
-                        
                         if (S.bettingMode === 'fib' && S.triggerMode === 2) {
-                            document.getElementById('lblStreak').innerText = '注码周期盈亏'; 
-                            document.getElementById('streakCount').innerText = S.sessionPL;
-                            document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); 
-                            document.getElementById('streakRate').style.display = 'none';
-                            document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
+                            document.getElementById('lblStreak').innerText = '注码周期盈亏'; document.getElementById('streakCount').innerText = S.sessionPL; document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); document.getElementById('streakRate').style.display = 'none'; document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
                         } else {
-                            document.getElementById('lblStreak').innerText = '连击层数'; 
-                            document.getElementById('streakCount').innerText = S.streak; 
-                            document.getElementById('streakCount').className = 'cum-val'; 
-                            document.getElementById('streakRate').style.display = 'inline';
-                            document.getElementById('lblProgress').innerText = '16组窗口进度 (WINDOW PROGRESS)'; 
+                            document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度 (WINDOW PROGRESS)'; 
                         }
-                        
-                        if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { 
-                            document.getElementById('regFill').style.width = '100%'; 
-                            document.getElementById('regPercent').innerText = '已完成'; 
-                        } 
-                        else { 
-                            let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16;
-                            let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); 
-                            document.getElementById('regFill').style.width = progress + '%'; 
-                            document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; 
-                        }
+                        if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '已完成'; } 
+                        else { let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16; let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); document.getElementById('regFill').style.width = progress + '%'; document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; }
                     }
                 }
 
