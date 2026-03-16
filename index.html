@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Baccarat Sniper Max (云端接入版)</title>
+    <title>Sniper Max (云端接入版)</title>
     <style>
         :root {
             --bg: #000000;
@@ -295,9 +295,9 @@
 
     <script>
         // ==========================================
-        // ⚠️ 极其重要：在这里填入你 Render 的专属网址
+        // 🚨 核心总线：已为你永久绑定云端渲染后厨
         // ==========================================
-        const API_URL = "https://你的render网址.onrender.com"; 
+        const API_URL = "https://quant-o79q.onrender.com"; 
         
         let CRED = { u: '', p: '' };
         let currentTriggerMode = 2;
@@ -345,7 +345,7 @@
                 }
             } catch (error) {
                 console.error(error);
-                document.getElementById('msg').innerText = "连接服务器失败，请检查网络或网址配置";
+                document.getElementById('msg').innerText = "连接服务器失败，请检查网络或后厨状态";
             } finally {
                 hideLoader();
             }
@@ -356,7 +356,6 @@
             document.getElementById('appLayer').style.display = 'flex'; 
         }
 
-        // 🚨 强化版的登出功能，彻底清除浏览器记忆并刷新网页
         function logout() { 
             if(confirm("确定要登出当前账号并切换吗？")) { 
                 localStorage.removeItem('bacc_cloud_logged_in'); 
