@@ -21,20 +21,44 @@
         .btn-warn { background: transparent; border: 1px solid var(--warn-yellow); color: var(--warn-yellow); }
         .btn-red { background: transparent; border: 1px solid var(--loss-red); color: var(--loss-red); }
         .input-box { padding: 10px; background: #2c2c2e; border: 1px solid #444; color: #fff; border-radius: 6px; margin-right: 10px; }
-        #loginLayer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .login-box { width: 300px; text-align: center; background: #1c1c1e; padding: 30px; border-radius: 12px; border: 1px solid var(--accent-blue); }
-        .login-input { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #444; color: #fff; box-sizing: border-box; border-radius: 6px; }
+        
+        /* 弹窗样式 */
+        .overlay-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(5px); }
+        .modal-box { width: 340px; background: #1c1c1e; padding: 25px 20px; border-radius: 16px; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.9); }
+        .login-input { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #444; color: #fff; box-sizing: border-box; border-radius: 6px; outline: none; }
+        .login-input:focus { border-color: var(--accent-blue); }
+        
+        /* 权限复选框视觉优化 */
+        .chk-row { display: flex; align-items: center; padding: 12px 10px; margin-bottom: 8px; background: #2c2c2e; border-radius: 8px; cursor: pointer; border: 1px solid #333; transition: 0.2s; }
+        .chk-row:hover { border-color: var(--accent-blue); }
+        .chk-box { margin-right: 12px; transform: scale(1.4); accent-color: var(--accent-blue); cursor: pointer; }
+        .chk-label { font-size: 14px; color: #ddd; font-weight: bold; cursor: pointer; user-select: none; }
     </style>
 </head>
 <body>
 
-    <div id="loginLayer">
-        <div class="login-box">
+    <div id="loginLayer" class="overlay-layer" style="display:flex;">
+        <div class="modal-box" style="text-align: center;">
             <h2 style="color:var(--accent-blue); margin-top:0;">司令部接入</h2>
             <input type="text" id="adminU" class="login-input" placeholder="最高指挥官账号">
             <input type="password" id="adminP" class="login-input" placeholder="访问密钥">
             <button class="btn btn-blue" style="width:100%; padding:12px; font-size:16px; margin-top:10px;" onclick="adminLogin()">授权进入</button>
             <div id="msg" style="color:var(--loss-red); margin-top:10px; font-size: 12px;"></div>
+        </div>
+    </div>
+
+    <div id="permissionLayer" class="overlay-layer">
+        <div class="modal-box">
+            <h3 style="color:#fff; margin-top:0; border-bottom:1px solid #333; padding-bottom:10px;">🎯 分配战术套餐</h3>
+            <div id="permUserInfo" style="color:#888; font-size:12px; margin-bottom:15px;"></div>
+            
+            <div id="strategyCheckboxes" style="max-height: 300px; overflow-y: auto;">
+                </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn" style="flex:1; padding:12px; background:#444; color:#fff;" onclick="closePermissionModal()">取 消</button>
+                <button class="btn btn-blue" style="flex:1; padding:12px;" onclick="savePermissions()">保 存</button>
+            </div>
         </div>
     </div>
 
@@ -76,6 +100,18 @@
     <script>
         const API_URL = "https://quant-o79q.onrender.com"; 
         let ADMIN_CRED = { u: '', p: '' };
+        
+        // 全局套餐字典库（以后加新套餐直接在这里加即可，自动同步前端）
+        const ALL_STRATEGIES = [
+            { id: 1, label: '套餐 1：2连触发 + 斐波那契' },
+            { id: 2, label: '套餐 2：3连触发 + 马丁格尔' },
+            { id: 3, label: '套餐 3：连续手拦截 + 马丁格尔' },
+            { id: 4, label: '套餐 4：2连触发 + 拉布谢尔' },
+            { id: 5, label: '套餐 5：大路四式接力 + 拉布谢尔' },
+            { id: 6, label: '套餐 6：双核对冲引擎' }
+        ];
+
+        let currentEditUserId = null;
 
         async function adminLogin() {
             ADMIN_CRED.u = document.getElementById('adminU').value;
@@ -125,7 +161,7 @@
                     <td>${stratText}</td>
                     <td>
                         ${u.role !== 'admin' ? `
-                            <button class="btn btn-blue" style="background:#5e5ce6;" onclick="manageUser('EDIT_STRATEGY', ${u.id}, '${u.username}', '${u.allowed_strategies || ''}')">配权限</button>
+                            <button class="btn btn-blue" style="background:#5e5ce6;" onclick="openPermissionModal(${u.id}, '${u.username}', '${u.allowed_strategies || ''}')">配权限</button>
                             <button class="btn btn-blue" onclick="manageUser('EDIT_USER', ${u.id}, '${u.username}')">改账号</button>
                             <button class="btn btn-green" onclick="manageUser('EDIT_TIME', ${u.id})">改时长</button>
                             <button class="btn btn-warn" onclick="manageUser('TOGGLE_PAUSE', ${u.id})">${u.status==='paused' ? '恢复运行' : '暂停挂起'}</button>
@@ -146,6 +182,55 @@
             document.getElementById('logsTableBody').innerHTML = logsHtml;
         }
 
+        // ==========================================
+        // 🎯 视觉化权限分配核心逻辑
+        // ==========================================
+        function openPermissionModal(targetId, username, currentStrats) {
+            currentEditUserId = targetId;
+            let allowedArr = currentStrats ? currentStrats.split(',').map(s => s.trim()) : [];
+            
+            document.getElementById('permUserInfo').innerHTML = `正在为徒弟 <span style="color:#fff; font-weight:bold; font-size:14px;">${username}</span> 分配权限：`;
+            
+            let html = "";
+            ALL_STRATEGIES.forEach(str => {
+                let isChecked = allowedArr.includes(str.id.toString()) ? "checked" : "";
+                html += `
+                    <label class="chk-row">
+                        <input type="checkbox" class="chk-box strat-chk" value="${str.id}" ${isChecked}>
+                        <span class="chk-label">${str.label}</span>
+                    </label>
+                `;
+            });
+            
+            document.getElementById('strategyCheckboxes').innerHTML = html;
+            document.getElementById('permissionLayer').style.display = 'flex';
+        }
+
+        function closePermissionModal() {
+            document.getElementById('permissionLayer').style.display = 'none';
+            currentEditUserId = null;
+        }
+
+        async function savePermissions() {
+            if (!currentEditUserId) return;
+            
+            // 抓取所有被打勾的选项，拼成逗号分隔的字符串
+            let checkedBoxes = document.querySelectorAll('.strat-chk:checked');
+            let selectedStrats = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+            
+            // 发送请求给服务器
+            await sendManageRequest({ 
+                manageAction: 'EDIT_STRATEGY', 
+                targetId: currentEditUserId, 
+                strategies: selectedStrats 
+            });
+            
+            closePermissionModal();
+        }
+
+        // ==========================================
+        // 原有管理功能区
+        // ==========================================
         async function changeAdminPwd() {
             let newPwd = prompt("请输入您新的最高指挥官密码：\n(修改后需重新登录)");
             if (!newPwd || newPwd.trim() === '') return;
@@ -172,17 +257,11 @@
                 let input = prompt(`为 UID-${targetId} 修改时长。\n输入增加的天数（填正数增加，负数扣减）：`, "30");
                 if (!input || isNaN(parseInt(input))) return; reqBody.addDays = parseInt(input);
             }
-            else if (action === 'EDIT_STRATEGY') {
-                let currentStrats = arguments[3];
-                let input = prompt(`为徒弟 [${oldUsername}] 开放战术套餐。\n\n输入套餐编号（1到6），用英文逗号隔开。\n（例如只开1和6，就输入：1,6）\n\n【留空】并按确定 = 没收所有权限：`, currentStrats);
-                if (input === null) return; 
-                reqBody.strategies = input.replace(/，/g, ',').replace(/\s/g, ''); // 自动修复中文逗号和空格
-            }
             else if (action === 'DELETE') {
                 if(!confirm(`⚠️ 确定要彻底删除徒弟 [${oldUsername}] 的账号和流水吗？`)) return;
             }
 
-            if(action !== 'TOGGLE_PAUSE' && action !== 'DELETE' && reqBody.strategies === undefined && action !== 'ADD' && action !== 'EDIT_USER' && action !== 'EDIT_TIME') return;
+            if(action !== 'TOGGLE_PAUSE' && action !== 'DELETE' && action !== 'ADD' && action !== 'EDIT_USER' && action !== 'EDIT_TIME') return;
             
             await sendManageRequest(reqBody);
         }
