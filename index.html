@@ -22,7 +22,7 @@
         .btn-small { background: #333; color: #ccc; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-reset { color: var(--loss); }
         .btn-logout { background: transparent; border: 1px solid #666; color: #aaa; }
-        .btn-setting { background: transparent; border: 1px solid #555; color: #fff; display: none; /* 默认隐藏，有权限才显示 */ }
+        .btn-setting { background: transparent; border: 1px solid #555; color: #fff; display: none; }
         .dashboard { padding: 10px; background: var(--card); flex-shrink: 0; }
         .pl-display-area { text-align: center; padding: 5px 0 10px 0; }
         .pl-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
@@ -74,7 +74,6 @@
     </style>
 </head>
 <body>
-    
     <div id="loader">⚡ 引擎连接中...</div>
 
     <div id="loginLayer" class="overlay-layer">
@@ -91,8 +90,7 @@
         <div class="modal-box">
             <h3 style="color:#fff; margin-top:0; border-bottom:1px solid #333; padding-bottom:10px;">⚙️ 云端战术套餐设置</h3>
             <div class="modal-label">⚔️ 您被允许的战术组</div>
-            <select id="selStrategy" class="modal-input">
-                </select>
+            <select id="selStrategy" class="modal-input"></select>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="modal-btn btn-cancel" onclick="closeSettings()">取 消</button>
                 <button class="modal-btn" onclick="applySettings()">保存并重置云端</button>
@@ -117,7 +115,6 @@
                 <div class="pl-label">账户总净盈亏 (NET P/L)</div>
                 <div class="pl-value win-color" id="totalPL">+0.00</div>
             </div>
-
             <div class="comm-row" id="gameStatusLabel" style="color: var(--accent); font-size: 14px;">等待连接云端...</div>
 
             <div class="cum-scores-row">
@@ -133,23 +130,11 @@
             </div>
 
             <div id="sysLogBox" class="sys-log-box"></div>
-
-            <div id="labouchereBox" class="labouchere-display">
-                <span class="labouchere-label">当前消数序列 (LABOUCHERE SEQUENCE)</span>
-                <span id="labouchereSeqText">1 - 1 - 1</span>
-            </div>
+            <div id="labouchereBox" class="labouchere-display"><span class="labouchere-label">当前消数序列 (LABOUCHERE)</span><span id="labouchereSeqText">1 - 1 - 1</span></div>
 
             <div id="dualCoreBox" class="dual-core-container">
-                <div class="core-box">
-                    <div class="core-title">🧠 左脑 [策4]</div>
-                    <div class="core-seq" id="c4SeqText">1 - 1 - 1</div>
-                    <div class="core-pl" id="c4PlText" style="color:#aaa">单边: 0</div>
-                </div>
-                <div class="core-box">
-                    <div class="core-title">💡 右脑 [策5]</div>
-                    <div class="core-seq" id="c5SeqText">1 - 1 - 1</div>
-                    <div class="core-pl" id="c5PlText" style="color:#aaa">单边: 0</div>
-                </div>
+                <div class="core-box"><div class="core-title">🧠 左脑 [策4]</div><div class="core-seq" id="c4SeqText">1-1-1</div><div class="core-pl" id="c4PlText"></div></div>
+                <div class="core-box"><div class="core-title">💡 右脑 [策5]</div><div class="core-seq" id="c5SeqText">1-1-1</div><div class="core-pl" id="c5PlText"></div></div>
             </div>
 
             <div class="instr-card">
@@ -176,14 +161,7 @@
 
         <div class="table-wrap">
             <table>
-                <thead>
-                    <tr>
-                        <th width="15%">组</th>
-                        <th width="35%">结果(1/2)</th>
-                        <th width="25%">动作盈亏</th>
-                        <th width="25%">总盈亏</th>
-                    </tr>
-                </thead>
+                <thead><tr><th width="15%">组</th><th width="35%">结果(1/2)</th><th width="25%">动作盈亏</th><th width="25%">总盈亏</th></tr></thead>
                 <tbody id="gameTable"></tbody>
             </table>
         </div>
@@ -202,19 +180,17 @@
             { id: 3, val: 'hand_martingale', label: '套餐 3：连续手拦截 + 马丁格尔' },
             { id: 4, val: '2_labouchere', label: '套餐 4：2连触发 + 拉布谢尔' },
             { id: 5, val: '5_labouchere', label: '套餐 5：大路四式接力 + 拉布谢尔' },
-            { id: 6, val: '6_labouchere', label: '套餐 6：双核对冲引擎' }
+            { id: 6, val: '6_labouchere', label: '套餐 6：双核对冲引擎' },
+            { id: 7, val: '7_fib2', label: '套餐 7：无尽追踪防骗线 (退2进1)' }
         ];
 
         window.onload = function() {
             if (localStorage.getItem('bacc_cloud_logged_in') === 'true') {
-                CRED.u = localStorage.getItem('bacc_u');
-                CRED.p = localStorage.getItem('bacc_p');
-                let savedTrig = localStorage.getItem('bacc_trig');
-                let savedBet = localStorage.getItem('bacc_bet');
+                CRED.u = localStorage.getItem('bacc_u'); CRED.p = localStorage.getItem('bacc_p');
+                let savedTrig = localStorage.getItem('bacc_trig'), savedBet = localStorage.getItem('bacc_bet');
                 if(savedTrig) currentTriggerMode = savedTrig === 'hand' ? 'hand' : parseInt(savedTrig);
                 if(savedBet) currentBettingMode = savedBet;
-                enterApp();
-                sendAction('STATUS_CHECK'); 
+                enterApp(); sendAction('STATUS_CHECK'); 
             }
         };
 
@@ -222,61 +198,44 @@
         function hideLoader() { document.getElementById('loader').style.display = 'none'; }
 
         async function tryLogin() {
-            CRED.u = document.getElementById('u').value;
-            CRED.p = document.getElementById('p').value;
+            CRED.u = document.getElementById('u').value; CRED.p = document.getElementById('p').value;
             showLoader();
             try {
                 const response = await fetch(API_URL + '/api/action', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: CRED.u, password: CRED.p, command: 'STATUS_CHECK', triggerMode: currentTriggerMode, bettingMode: currentBettingMode })
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    localStorage.setItem('bacc_cloud_logged_in', 'true');
-                    localStorage.setItem('bacc_u', CRED.u);
-                    localStorage.setItem('bacc_p', CRED.p);
-                    enterApp();
-                    renderUI(data);
-                } else {
-                    document.getElementById('msg').innerText = "账号或密码错误，或授权已过期";
-                }
-            } catch (error) {
-                console.error(error);
-                document.getElementById('msg').innerText = "连接服务器失败，请检查网络或后厨状态";
-            } finally { hideLoader(); }
+                    localStorage.setItem('bacc_cloud_logged_in', 'true'); localStorage.setItem('bacc_u', CRED.u); localStorage.setItem('bacc_p', CRED.p);
+                    enterApp(); renderUI(data);
+                } else { document.getElementById('msg').innerText = "账号或密码错误，或授权已过期"; }
+            } catch (error) { document.getElementById('msg').innerText = "连接服务器失败，请检查网络"; } finally { hideLoader(); }
         }
 
         function enterApp() { document.getElementById('loginLayer').style.display = 'none'; document.getElementById('appLayer').style.display = 'flex'; }
-        function logout() { if(confirm("确定要登出当前账号并切换吗？")) { localStorage.removeItem('bacc_cloud_logged_in'); localStorage.removeItem('bacc_u'); localStorage.removeItem('bacc_p'); CRED = { u: '', p: '' }; location.reload(); } }
+        function logout() { if(confirm("确定要登出当前账号吗？")) { localStorage.clear(); location.reload(); } }
         
         function openSettings() { 
-            let curVal = (currentTriggerMode === 5 || currentTriggerMode === 6 ? currentTriggerMode : currentTriggerMode) + '_' + currentBettingMode; 
+            let curVal = (currentTriggerMode === 5 || currentTriggerMode === 6 || currentTriggerMode === 7 ? currentTriggerMode : currentTriggerMode) + '_' + currentBettingMode; 
             let sel = document.getElementById('selStrategy');
-            let hasCurrent = Array.from(sel.options).some(opt => opt.value === curVal);
-            if(hasCurrent) sel.value = curVal;
+            if(Array.from(sel.options).some(opt => opt.value === curVal)) sel.value = curVal;
             document.getElementById('settingsLayer').style.display = 'flex'; 
         }
-
         function closeSettings() { document.getElementById('settingsLayer').style.display = 'none'; }
-
         function applySettings() {
             let comboValue = document.getElementById('selStrategy').value.split('_');
             currentTriggerMode = comboValue[0] === 'hand' ? 'hand' : parseInt(comboValue[0]);
             currentBettingMode = comboValue[1];
-            localStorage.setItem('bacc_trig', currentTriggerMode);
-            localStorage.setItem('bacc_bet', currentBettingMode);
-            closeSettings();
-            sendAction('UPDATE_SETTINGS');
+            localStorage.setItem('bacc_trig', currentTriggerMode); localStorage.setItem('bacc_bet', currentBettingMode);
+            closeSettings(); sendAction('UPDATE_SETTINGS');
         }
 
         let isEngineRunning = false;
-
         async function sendAction(command, action = null) {
             if (isEngineRunning) return; 
             isEngineRunning = true; 
             if (navigator.vibrate && command === 'INPUT') navigator.vibrate(40); 
-            
             if (command !== 'INPUT' && command !== 'UNDO') showLoader();
             
             const btnB = document.querySelector('.bg-b'), btnP = document.querySelector('.bg-p');
@@ -284,55 +243,28 @@
 
             try {
                 const response = await fetch(API_URL + '/api/action', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: CRED.u, password: CRED.p, command: command, action: action, triggerMode: currentTriggerMode, bettingMode: currentBettingMode })
                 });
-
-                if (response.status === 401 || response.status === 403) {
-                    alert("登录失效或账号已被暂停/到期，请联系管理员！");
-                    logout();
-                    return;
-                }
-
-                const state = await response.json();
-                renderUI(state); 
-
-            } catch (error) {
-                console.error("网络请求失败", error);
-                alert("网络异常，指令发送失败！你的状态已安全保存在服务器。请重试。");
-            } finally {
-                hideLoader(); 
-                isEngineRunning = false; 
-                if(btnB && btnP) { setTimeout(() => { btnB.classList.remove('btn-disabled'); btnP.classList.remove('btn-disabled'); }, 50); }
-            }
+                if (response.status === 401 || response.status === 403) { alert("状态异常，请联系管理员！"); logout(); return; }
+                renderUI(await response.json()); 
+            } catch (error) { alert("网络异常，数据已在云端保护中。"); } 
+            finally { hideLoader(); isEngineRunning = false; if(btnB && btnP) { setTimeout(() => { btnB.classList.remove('btn-disabled'); btnP.classList.remove('btn-disabled'); }, 50); } }
         }
 
         function renderUI(S) {
             window.requestAnimationFrame(() => {
                 if(!S) return;
                 
-                // 🚀 【权限渲染核心】：根据云端下发的权限，决定是否显示设置按钮和下拉菜单
                 if (S._role) {
-                    let allowedArr = S._role === 'admin' ? ["1","2","3","4","5","6"] : (S._allowedStrategies ? S._allowedStrategies.split(',').map(s=>s.trim()) : []);
-                    let sel = document.getElementById('selStrategy');
-                    let newHtml = '';
-                    let hasAny = false;
-                    
-                    ALL_STRATEGIES.forEach(str => {
-                        if (allowedArr.includes(str.id.toString())) {
-                            newHtml += `<option value="${str.val}">${str.label}</option>`;
-                            hasAny = true;
-                        }
-                    });
-                    
-                    if (sel.innerHTML !== newHtml) sel.innerHTML = newHtml;
+                    let allowedArr = S._role === 'admin' ? ["1","2","3","4","5","6","7"] : (S._allowedStrategies ? S._allowedStrategies.split(',').map(s=>s.trim()) : []);
+                    let newHtml = ''; let hasAny = false;
+                    ALL_STRATEGIES.forEach(str => { if (allowedArr.includes(str.id.toString())) { newHtml += `<option value="${str.val}">${str.label}</option>`; hasAny = true; } });
+                    if (document.getElementById('selStrategy').innerHTML !== newHtml) document.getElementById('selStrategy').innerHTML = newHtml;
                     document.getElementById('btnSetting').style.display = hasAny ? 'block' : 'none';
                 }
 
-                const wins = (S.wlHistory || []).filter(x => x === '✅').length; 
-                const losses = (S.wlHistory || []).filter(x => x === '❌').length;
-                
+                const wins = (S.wlHistory || []).filter(x => x === '✅').length; const losses = (S.wlHistory || []).filter(x => x === '❌').length;
                 document.getElementById('totalPL').innerText = (S.totalPL > 0 ? "+" : "") + S.totalPL;
                 document.getElementById('totalPL').className = S.totalPL > 0 ? 'pl-value win-color' : (S.totalPL < 0 ? 'pl-value loss-color' : 'pl-value');
                 
@@ -341,26 +273,33 @@
                 else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 形态极限 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
                 else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 游戏结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
                 else {
-                    if (S.triggerMode === 6) { statusLabel.innerText = "🟣 套餐6 (云端守护中) - 双核对冲"; }
-                    else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 套餐5 (云端守护中) - 大路四式"; } 
-                    else if (S.triggerMode === 'hand') { statusLabel.innerText = "🟢 套餐3 (云端守护中) - 连续流水线"; } 
-                    else if (S.bettingMode === 'labouchere') { statusLabel.innerText = "🟢 套餐4 (云端守护中) - 拉布谢尔"; } 
-                    else { statusLabel.innerText = "🟢 套餐1/2 (云端守护中) - 动态追踪"; }
-                    statusLabel.style.color = "var(--accent)";
+                    if (S.triggerMode === 7) { statusLabel.innerText = "🟠 套餐7 (云端守护) - 无尽追踪 (防骗线)"; statusLabel.style.color = "var(--warn-yellow)"; }
+                    else if (S.triggerMode === 6) { statusLabel.innerText = "🟣 套餐6 (云端守护) - 双核对冲"; statusLabel.style.color = "var(--accent)";}
+                    else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 套餐5 (云端守护) - 大路四式"; statusLabel.style.color = "var(--accent)";} 
+                    else if (S.triggerMode === 'hand') { statusLabel.innerText = "🟢 套餐3 (云端守护) - 连续流水线"; statusLabel.style.color = "var(--accent)";} 
+                    else if (S.bettingMode === 'labouchere') { statusLabel.innerText = "🟢 套餐4 (云端守护) - 拉布谢尔"; statusLabel.style.color = "var(--accent)";} 
+                    else { statusLabel.innerText = "🟢 套餐1/2 (云端守护) - 动态追踪"; statusLabel.style.color = "var(--accent)";}
                 }
 
                 const labBox = document.getElementById('labouchereBox');
                 const dualBox = document.getElementById('dualCoreBox');
+                
                 if (S.triggerMode === 6) {
                     labBox.style.display = 'none'; dualBox.style.display = 'grid';
                     document.getElementById('c4SeqText').innerText = S.c4_seq.length > 0 ? S.c4_seq.join(' - ') : '重置中';
-                    document.getElementById('c4PlText').innerHTML = `总: <span class="${S.c4_pl>0?'win-color':(S.c4_pl<0?'loss-color':'')}">${S.c4_pl>0?'+':''}${S.c4_pl}</span> &nbsp;|&nbsp; 局: <span class="${S.c4_session_pl>0?'win-color':(S.c4_session_pl<0?'loss-color':'')}">${S.c4_session_pl}</span>`;
+                    document.getElementById('c4PlText').innerHTML = `单边: <span class="${S.c4_session_pl>0?'win-color':(S.c4_session_pl<0?'loss-color':'')}">${S.c4_session_pl}</span>`;
                     document.getElementById('c5SeqText').innerText = S.c5_seq.length > 0 ? S.c5_seq.join(' - ') : '重置中';
-                    document.getElementById('c5PlText').innerHTML = `总: <span class="${S.c5_pl>0?'win-color':(S.c5_pl<0?'loss-color':'')}">${S.c5_pl>0?'+':''}${S.c5_pl}</span> &nbsp;|&nbsp; 局: <span class="${S.c5_session_pl>0?'win-color':(S.c5_session_pl<0?'loss-color':'')}">${S.c5_session_pl}</span>`;
+                    document.getElementById('c5PlText').innerHTML = `单边: <span class="${S.c5_session_pl>0?'win-color':(S.c5_session_pl<0?'loss-color':'')}">${S.c5_session_pl}</span>`;
                     document.getElementById('lblFibLevel').innerText = '全局状态'; document.getElementById('fibLevel').innerText = '并发中';
                     document.getElementById('lblTrigger').innerText = '当前目标'; let t4 = S.targetProp ? (S.targetProp === 'A' ? '[庄]' : '[闲]') : '空'; let t5 = S.macroTarget ? (S.macroTarget === 'D' ? '[双]' : '[单]') : '空'; document.getElementById('targetProp').innerText = `4:${t4} 5:${t5}`; document.getElementById('targetProp').className = 'cum-val';
-                    document.getElementById('lblStreak').innerText = '大路阵型'; let macros = S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单'); document.getElementById('streakCount').innerText = macros.length > 0 ? macros.slice(-3).join('') : '-'; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
-                    document.getElementById('lblProgress').innerText = '双核永动机挂机模式 (无固定结束点)'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #b043ff 0%, #0a84ff 100%)'; document.getElementById('regPercent').innerText = '无限';
+                    document.getElementById('lblStreak').innerText = '大路阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
+                    document.getElementById('lblProgress').innerText = '双核永动机挂机模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #b043ff 0%, #0a84ff 100%)'; document.getElementById('regPercent').innerText = '无限';
+                } else if (S.triggerMode === 7) {
+                    labBox.style.display = 'none'; dualBox.style.display = 'none';
+                    document.getElementById('lblFibLevel').innerText = '注码阶段'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
+                    document.getElementById('lblTrigger').innerText = '锁定目标'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'打0(庄)':'打1(闲)') : "观察寻标"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
+                    document.getElementById('lblStreak').innerText = '当前连击'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
+                    document.getElementById('lblProgress').innerText = '防骗线追踪模式 (挂机)'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #ff9500 0%, #ff453a 100%)'; document.getElementById('regPercent').innerText = '无限';
                 } else {
                     dualBox.style.display = 'none';
                     if (S.bettingMode === 'labouchere') { 
@@ -370,18 +309,18 @@
                     }
                     if (S.triggerMode === 5) {
                         document.getElementById('lblTrigger').innerText = '当前目标'; document.getElementById('targetProp').innerText = S.macroTarget ? (S.macroTarget === 'D' ? '抓 [双]' : '抓 [单]') : "观望找信号"; document.getElementById('targetProp').className = S.macroTarget ? 'cum-val win-color' : 'cum-val wait-color';
-                        document.getElementById('lblStreak').innerText = '宏观阵型'; let macros = S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单'); document.getElementById('streakCount').innerText = macros.length > 0 ? macros.slice(-3).join('') : '-'; document.getElementById('streakRate').style.display = 'none';
-                        document.getElementById('lblProgress').innerText = '拉布谢尔无限循环追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
+                        document.getElementById('lblStreak').innerText = '宏观阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakRate').style.display = 'none';
+                        document.getElementById('lblProgress').innerText = '拉布谢尔循环模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else if (S.triggerMode === 'hand') {
                         document.getElementById('lblTrigger').innerText = '当前阶段'; let pName = S.s3State === 'PHASE1' ? 'P1(观望)' : (S.s3State === 'PHASE2' ? 'P2(一裁)' : 'P3(二裁)'); document.getElementById('targetProp').innerText = pName; document.getElementById('targetProp').className = 'cum-val wait-color';
                         document.getElementById('lblStreak').innerText = '攻击目标'; document.getElementById('streakCount').innerText = S.s3Target ? (S.s3Target==='B'?'0(庄)':'1(闲)') : '-'; document.getElementById('streakCount').className = S.s3Target ? (S.s3Target==='B'?'cum-val side-B':'cum-val side-P') : 'cum-val'; document.getElementById('streakRate').style.display = 'none';
-                        document.getElementById('lblProgress').innerText = '连续手流水线追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
+                        document.getElementById('lblProgress').innerText = '连续手拦截模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else {
                         document.getElementById('lblTrigger').innerText = S.triggerMode === 3 ? '目标(3连触发)' : '目标(2连触发)'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'A (打0)':'B (打1)') : "无"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
                         if (S.bettingMode === 'fib' && S.triggerMode === 2) {
                             document.getElementById('lblStreak').innerText = '注码周期盈亏'; document.getElementById('streakCount').innerText = S.sessionPL; document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); document.getElementById('streakRate').style.display = 'none'; document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
                         } else {
-                            document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度 (WINDOW PROGRESS)'; 
+                            document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度'; 
                         }
                         if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '已完成'; } 
                         else { let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16; let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); document.getElementById('regFill').style.width = progress + '%'; document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; }
@@ -395,8 +334,8 @@
                 const logBox = document.getElementById('sysLogBox');
                 if (S.sysLogs && S.sysLogs.length > 0) { logBox.innerHTML = S.sysLogs.map(l => `<div class="log-entry">${l}</div>`).join(''); logBox.scrollTop = logBox.scrollHeight; }
 
-                let instr = S.currentInstruction || { side: null, amt: 0, msg: "观 望", detail: "等待服务器状态同步" };
-                let infTag = (S.triggerMode === 'hand' || S.triggerMode === 5 || S.triggerMode === 6 || S.bettingMode === 'labouchere') ? ' (无限)' : '';
+                let instr = S.currentInstruction || { side: null, amt: 0, msg: "观 望", detail: "等待状态同步" };
+                let infTag = (S.triggerMode === 'hand' || S.triggerMode === 5 || S.triggerMode === 6 || S.triggerMode === 7 || S.bettingMode === 'labouchere') ? ' (无限)' : '';
                 document.getElementById('phaseTag').innerText = `第 ${S.group} 组 | 位置 ${S.hand}${infTag}`;
                 let dir = document.getElementById('instrDir');
                 if (instr.amt === 0) { dir.innerText = instr.msg; dir.className = "side-Wait"; document.getElementById('instrAmt').innerText = ""; } 
