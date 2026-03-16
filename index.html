@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sniper Max (云端接入版)</title>
+    <title>Sniper Max (极速版)</title>
     <style>
         :root {
             --bg: #000000;
@@ -32,10 +32,10 @@
 
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 10000;
+            background: rgba(0,0,0,0.85); z-index: 10000;
             display: none; justify-content: center; align-items: center;
             color: var(--accent); font-weight: bold; font-size: 18px;
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(5px);
         }
 
         .overlay-layer {
@@ -294,9 +294,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // 🚨 核心总线：已为你永久绑定云端渲染后厨
-        // ==========================================
         const API_URL = "https://quant-o79q.onrender.com"; 
         
         let CRED = { u: '', p: '' };
@@ -384,7 +381,7 @@
         }
 
         // ==========================================
-        // 核心通讯大脑：带防连点锁
+        // 🚀 核心通讯大脑：无黑屏极速版
         // ==========================================
         let isEngineRunning = false;
 
@@ -394,7 +391,10 @@
 
             if (navigator.vibrate && command === 'INPUT') navigator.vibrate(40); 
             
-            showLoader();
+            // 只有重置和登录检测时才显示遮罩，平时打牌纯靠按键变暗防连点，消灭黑屏卡顿感
+            if (command !== 'INPUT' && command !== 'UNDO') {
+                showLoader();
+            }
             
             const btnB = document.querySelector('.bg-b'), btnP = document.querySelector('.bg-p');
             if(btnB && btnP) { btnB.classList.add('btn-disabled'); btnP.classList.add('btn-disabled'); }
@@ -414,7 +414,7 @@
                 });
 
                 if (response.status === 401 || response.status === 403) {
-                    alert("登录失效或账号已被封禁/到期，请联系管理员！");
+                    alert("登录失效或账号已被暂停/到期，请联系管理员！");
                     logout();
                     return;
                 }
@@ -426,13 +426,15 @@
                 console.error("网络请求失败", error);
                 alert("网络异常，指令发送失败！你的状态已安全保存在服务器。请重试。");
             } finally {
-                hideLoader();
+                hideLoader(); 
                 isEngineRunning = false; 
+                
+                // 仅需 50 毫秒恢复按键，极致跟手响应
                 if(btnB && btnP) { 
                     setTimeout(() => {
                         btnB.classList.remove('btn-disabled'); 
                         btnP.classList.remove('btn-disabled');
-                    }, 100);
+                    }, 50); 
                 }
             }
         }
