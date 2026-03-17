@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sniper Max (极速版)</title>
+    <title>百家乐数据分析研究戒赌软件</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --text: #ffffff; --accent: #ffd700; --win: #32d74b; --loss: #ff453a; --border: #333; --banker-bg: #ff453a; --player-bg: #0a84ff; --wait-bg: #555555; }
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; -webkit-user-select: none; user-select: none; }
@@ -78,10 +78,10 @@
 
     <div id="loginLayer" class="overlay-layer">
         <div class="modal-box">
-            <h3 style="color:var(--accent); margin-top:0; margin-bottom:20px;">云端系统登录</h3>
-            <input type="text" id="u" class="modal-input" placeholder="用户名">
-            <input type="password" id="p" class="modal-input" placeholder="密码">
-            <button class="modal-btn" onclick="tryLogin()">登 录 (接入云端)</button>
+            <h3 style="color:var(--accent); margin-top:0; margin-bottom:20px;">百家乐数据分析研究戒赌软件</h3>
+            <input type="text" id="u" class="modal-input" placeholder="访问账号">
+            <input type="password" id="p" class="modal-input" placeholder="访问密钥">
+            <button class="modal-btn" onclick="tryLogin()">启 动 研 究</button>
             <div id="msg" style="color:var(--loss); font-size:12px; margin-top:10px;"></div>
         </div>
     </div>
@@ -103,7 +103,7 @@
             <div style="display:flex; gap:8px; z-index:2;">
                 <button class="btn-small btn-setting" id="btnSetting" onclick="openSettings()">⚙️ 策略</button>
             </div>
-            <span class="app-title">Sniper Pro</span>
+            <span class="app-title">数据分析终端</span>
             <div class="btn-group-top">
                 <button class="btn-small btn-logout" onclick="logout()">登出</button>
                 <button class="btn-small btn-reset" onclick="sendAction('RESET')">重置</button>
@@ -174,7 +174,6 @@
         let currentTriggerMode = 2;
         let currentBettingMode = 'fib';
 
-        // 🚨 更新：套餐 7 的霸气名字
         const ALL_STRATEGIES = [
             { id: 1, val: '2_fib', label: '套餐 1：2连触发 + 斐波那契' },
             { id: 2, val: '3_martingale', label: '套餐 2：3连触发 + 马丁格尔' },
@@ -215,7 +214,7 @@
         }
 
         function enterApp() { document.getElementById('loginLayer').style.display = 'none'; document.getElementById('appLayer').style.display = 'flex'; }
-        function logout() { if(confirm("确定要登出当前账号吗？")) { localStorage.clear(); location.reload(); } }
+        function logout() { if(confirm("确定要退出研究系统吗？")) { localStorage.clear(); location.reload(); } }
         
         function openSettings() { 
             let curVal = (currentTriggerMode === 5 || currentTriggerMode === 6 || currentTriggerMode === 7 ? currentTriggerMode : currentTriggerMode) + '_' + currentBettingMode; 
@@ -274,7 +273,6 @@
                 else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 形态极限 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
                 else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 游戏结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
                 else {
-                    // 🚨 更新状态栏名字
                     if (S.triggerMode === 7) { statusLabel.innerText = "🟠 天网狙击 (云端守护) - 锁定攻击中"; statusLabel.style.color = "var(--warn-yellow)"; }
                     else if (S.triggerMode === 6) { statusLabel.innerText = "🟣 套餐6 (云端守护) - 双核对冲"; statusLabel.style.color = "var(--accent)";}
                     else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 套餐5 (云端守护) - 大路四式"; statusLabel.style.color = "var(--accent)";} 
@@ -322,7 +320,7 @@
                         if (S.bettingMode === 'fib' && S.triggerMode === 2) {
                             document.getElementById('lblStreak').innerText = '注码周期盈亏'; document.getElementById('streakCount').innerText = S.sessionPL; document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); document.getElementById('streakRate').style.display = 'none'; document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
                         } else {
-                            document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度 (WINDOW PROGRESS)'; 
+                            document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度'; 
                         }
                         if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '已完成'; } 
                         else { let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16; let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); document.getElementById('regFill').style.width = progress + '%'; document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; }
