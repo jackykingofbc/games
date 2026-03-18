@@ -274,6 +274,14 @@
         function renderUI(S) {
             window.requestAnimationFrame(() => {
                 if(!S) return;
+
+                // 🚀【前端同步认怂】：一旦后端强制更改了策略，前端立刻同步本地变量！
+                if (S.triggerMode && S.bettingMode) {
+                    currentTriggerMode = S.triggerMode;
+                    currentBettingMode = S.bettingMode;
+                    localStorage.setItem('bacc_trig', currentTriggerMode);
+                    localStorage.setItem('bacc_bet', currentBettingMode);
+                }
                 
                 if (S._role) {
                     let allowedArr = S._role === 'admin' ? ["1","2","3","4","5","6","7"] : (S._allowedStrategies ? S._allowedStrategies.split(',').map(s=>s.trim()) : []);
@@ -283,23 +291,33 @@
                     document.getElementById('btnSetting').style.display = hasAny ? 'block' : 'none';
                 }
 
+                let btnB = document.querySelector('.bg-b');
+                let btnP = document.querySelector('.bg-p');
+                let statusLabel = document.getElementById('gameStatusLabel');
+
+                // 🚨 如果被剥夺了所有权限，锁定终端
+                if (S.gameStatus === 'LOCKED') {
+                    statusLabel.innerText = "⛔ 未分配任何运算模型，终端已锁死"; 
+                    statusLabel.style.color = "var(--loss)";
+                    if(btnB && btnP) { btnB.style.display = 'none'; btnP.style.display = 'none'; }
+                } else {
+                    if(btnB && btnP) { btnB.style.display = 'block'; btnP.style.display = 'block'; }
+                    if (S.gameStatus === 'WON') { statusLabel.innerText = "🎉 分析完成 - 请点击重置开启新组"; statusLabel.style.color = "var(--win)"; } 
+                    else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 阈值截断 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
+                    else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 样本结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
+                    else {
+                        if (S.triggerMode === 7) { statusLabel.innerText = "🟠 自适应状态机 (云端守护) - 锁定攻击中"; statusLabel.style.color = "var(--warn-yellow)"; }
+                        else if (S.triggerMode === 6) { statusLabel.innerText = "🟣 策略 6 (云端守护) - 双核对冲"; statusLabel.style.color = "var(--accent)";}
+                        else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 策略 5 (云端守护) - 大路四式"; statusLabel.style.color = "var(--accent)";} 
+                        else if (S.triggerMode === 'hand') { statusLabel.innerText = "🟢 策略 3 (云端守护) - 连续流水线"; statusLabel.style.color = "var(--accent)";} 
+                        else if (S.bettingMode === 'labouchere') { statusLabel.innerText = "🟢 策略 4 (云端守护) - 拉布谢尔"; statusLabel.style.color = "var(--accent)";} 
+                        else { statusLabel.innerText = "🟢 策略 1/2 (云端守护) - 动态追踪"; statusLabel.style.color = "var(--accent)";}
+                    }
+                }
+
                 const wins = (S.wlHistory || []).filter(x => x === '✅').length; const losses = (S.wlHistory || []).filter(x => x === '❌').length;
                 document.getElementById('totalPL').innerText = (S.totalPL > 0 ? "+" : "") + S.totalPL;
                 document.getElementById('totalPL').className = S.totalPL > 0 ? 'pl-value win-color' : (S.totalPL < 0 ? 'pl-value loss-color' : 'pl-value');
-                
-                let statusLabel = document.getElementById('gameStatusLabel');
-                if (S.gameStatus === 'WON') { statusLabel.innerText = "🎉 分析完成 - 请点击重置开启新组"; statusLabel.style.color = "var(--win)"; } 
-                else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 阈值截断 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
-                else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 样本结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
-                else {
-                    // 🚨 全新霸气量化名字
-                    if (S.triggerMode === 7) { statusLabel.innerText = "🟠 自适应状态机 (云端守护) - 锁定攻击中"; statusLabel.style.color = "var(--warn-yellow)"; }
-                    else if (S.triggerMode === 6) { statusLabel.innerText = "🟣 策略 6 (云端守护) - 双核对冲"; statusLabel.style.color = "var(--accent)";}
-                    else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 策略 5 (云端守护) - 大路四式"; statusLabel.style.color = "var(--accent)";} 
-                    else if (S.triggerMode === 'hand') { statusLabel.innerText = "🟢 策略 3 (云端守护) - 连续流水线"; statusLabel.style.color = "var(--accent)";} 
-                    else if (S.bettingMode === 'labouchere') { statusLabel.innerText = "🟢 策略 4 (云端守护) - 拉布谢尔"; statusLabel.style.color = "var(--accent)";} 
-                    else { statusLabel.innerText = "🟢 策略 1/2 (云端守护) - 动态追踪"; statusLabel.style.color = "var(--accent)";}
-                }
 
                 const labBox = document.getElementById('labouchereBox'); const dualBox = document.getElementById('dualCoreBox');
                 if (S.triggerMode === 6) {
