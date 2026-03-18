@@ -173,15 +173,16 @@
         let CRED = { u: '', p: '' };
         let currentTriggerMode = 2;
         let currentBettingMode = 'fib';
+        let idleTimer = 0; 
 
         const ALL_STRATEGIES = [
-            { id: 1, val: '2_fib', label: '套餐 1：2连触发 + 斐波那契' },
-            { id: 2, val: '3_martingale', label: '套餐 2：3连触发 + 马丁格尔' },
-            { id: 3, val: 'hand_martingale', label: '套餐 3：连续手拦截 + 马丁格尔' },
-            { id: 4, val: '2_labouchere', label: '套餐 4：2连触发 + 拉布谢尔' },
-            { id: 5, val: '5_labouchere', label: '套餐 5：大路四式接力 + 拉布谢尔' },
-            { id: 6, val: '6_labouchere', label: '套餐 6：双核对冲引擎' },
-            { id: 7, val: '7_fib2', label: '套餐 7：天网狙击 (死咬防骗 / 退二进一)' }
+            { id: 1, val: '2_fib', label: '策略 1：2连触发 + 斐波那契' },
+            { id: 2, val: '3_martingale', label: '策略 2：3连触发 + 马丁格尔' },
+            { id: 3, val: 'hand_martingale', label: '策略 3：连续手拦截 + 马丁格尔' },
+            { id: 4, val: '2_labouchere', label: '策略 4：2连触发 + 拉布谢尔' },
+            { id: 5, val: '5_labouchere', label: '策略 5：大路四式接力 + 拉布谢尔' },
+            { id: 6, val: '6_labouchere', label: '策略 6：双核对冲引擎' },
+            { id: 7, val: '7_fib2', label: '策略 7：自适应状态机追踪 (防伪信号 / 动态退布)' }
         ];
 
         window.onload = function() {
@@ -191,8 +192,26 @@
                 if(savedTrig) currentTriggerMode = savedTrig === 'hand' ? 'hand' : parseInt(savedTrig);
                 if(savedBet) currentBettingMode = savedBet;
                 enterApp(); sendAction('STATUS_CHECK'); 
+                startHeartbeat(); 
             }
         };
+
+        function startHeartbeat() {
+            document.body.addEventListener('click', () => { idleTimer = 0; }, true);
+            document.body.addEventListener('touchstart', () => { idleTimer = 0; }, true);
+            setInterval(() => {
+                idleTimer++;
+                if(idleTimer >= 30) {
+                    alert("⚠️ 长时间未操作，为保护账号安全，已自动登出。");
+                    logout(true);
+                } else {
+                    fetch(API_URL + '/api/heartbeat', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: CRED.u })
+                    }).catch(e=>{});
+                }
+            }, 60000); 
+        }
 
         function showLoader() { document.getElementById('loader').style.display = 'flex'; }
         function hideLoader() { document.getElementById('loader').style.display = 'none'; }
@@ -208,13 +227,13 @@
                 if (response.ok) {
                     const data = await response.json();
                     localStorage.setItem('bacc_cloud_logged_in', 'true'); localStorage.setItem('bacc_u', CRED.u); localStorage.setItem('bacc_p', CRED.p);
-                    enterApp(); renderUI(data);
+                    enterApp(); renderUI(data); startHeartbeat();
                 } else { document.getElementById('msg').innerText = "账号或密码错误，或授权已过期"; }
             } catch (error) { document.getElementById('msg').innerText = "连接服务器失败，请检查网络"; } finally { hideLoader(); }
         }
 
         function enterApp() { document.getElementById('loginLayer').style.display = 'none'; document.getElementById('appLayer').style.display = 'flex'; }
-        function logout() { if(confirm("确定要退出研究系统吗？")) { localStorage.clear(); location.reload(); } }
+        function logout(force = false) { if(force || confirm("确定要退出研究系统吗？")) { localStorage.clear(); location.reload(); } }
         
         function openSettings() { 
             let curVal = (currentTriggerMode === 5 || currentTriggerMode === 6 || currentTriggerMode === 7 ? currentTriggerMode : currentTriggerMode) + '_' + currentBettingMode; 
@@ -246,7 +265,7 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: CRED.u, password: CRED.p, command: command, action: action, triggerMode: currentTriggerMode, bettingMode: currentBettingMode })
                 });
-                if (response.status === 401 || response.status === 403) { alert("状态异常，请联系管理员！"); logout(); return; }
+                if (response.status === 401 || response.status === 403) { alert("状态异常，请联系管理员！"); logout(true); return; }
                 renderUI(await response.json()); 
             } catch (error) { alert("网络异常，数据已在云端保护中。"); } 
             finally { hideLoader(); isEngineRunning = false; if(btnB && btnP) { setTimeout(() => { btnB.classList.remove('btn-disabled'); btnP.classList.remove('btn-disabled'); }, 50); } }
@@ -269,44 +288,37 @@
                 document.getElementById('totalPL').className = S.totalPL > 0 ? 'pl-value win-color' : (S.totalPL < 0 ? 'pl-value loss-color' : 'pl-value');
                 
                 let statusLabel = document.getElementById('gameStatusLabel');
-                if (S.gameStatus === 'WON') { statusLabel.innerText = "🎉 挑战成功 - 请点击重置开启新局"; statusLabel.style.color = "var(--win)"; } 
-                else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 形态极限 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
-                else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 游戏结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
+                if (S.gameStatus === 'WON') { statusLabel.innerText = "🎉 分析完成 - 请点击重置开启新组"; statusLabel.style.color = "var(--win)"; } 
+                else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 阈值截断 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
+                else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 样本结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
                 else {
-                    if (S.triggerMode === 7) { statusLabel.innerText = "🟠 天网狙击 (云端守护) - 锁定攻击中"; statusLabel.style.color = "var(--warn-yellow)"; }
-                    else if (S.triggerMode === 6) { statusLabel.innerText = "🟣 套餐6 (云端守护) - 双核对冲"; statusLabel.style.color = "var(--accent)";}
-                    else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 套餐5 (云端守护) - 大路四式"; statusLabel.style.color = "var(--accent)";} 
-                    else if (S.triggerMode === 'hand') { statusLabel.innerText = "🟢 套餐3 (云端守护) - 连续流水线"; statusLabel.style.color = "var(--accent)";} 
-                    else if (S.bettingMode === 'labouchere') { statusLabel.innerText = "🟢 套餐4 (云端守护) - 拉布谢尔"; statusLabel.style.color = "var(--accent)";} 
-                    else { statusLabel.innerText = "🟢 套餐1/2 (云端守护) - 动态追踪"; statusLabel.style.color = "var(--accent)";}
+                    // 🚨 全新霸气量化名字
+                    if (S.triggerMode === 7) { statusLabel.innerText = "🟠 自适应状态机 (云端守护) - 锁定攻击中"; statusLabel.style.color = "var(--warn-yellow)"; }
+                    else if (S.triggerMode === 6) { statusLabel.innerText = "🟣 策略 6 (云端守护) - 双核对冲"; statusLabel.style.color = "var(--accent)";}
+                    else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 策略 5 (云端守护) - 大路四式"; statusLabel.style.color = "var(--accent)";} 
+                    else if (S.triggerMode === 'hand') { statusLabel.innerText = "🟢 策略 3 (云端守护) - 连续流水线"; statusLabel.style.color = "var(--accent)";} 
+                    else if (S.bettingMode === 'labouchere') { statusLabel.innerText = "🟢 策略 4 (云端守护) - 拉布谢尔"; statusLabel.style.color = "var(--accent)";} 
+                    else { statusLabel.innerText = "🟢 策略 1/2 (云端守护) - 动态追踪"; statusLabel.style.color = "var(--accent)";}
                 }
 
-                const labBox = document.getElementById('labouchereBox');
-                const dualBox = document.getElementById('dualCoreBox');
-                
+                const labBox = document.getElementById('labouchereBox'); const dualBox = document.getElementById('dualCoreBox');
                 if (S.triggerMode === 6) {
                     labBox.style.display = 'none'; dualBox.style.display = 'grid';
-                    document.getElementById('c4SeqText').innerText = S.c4_seq.length > 0 ? S.c4_seq.join(' - ') : '重置中';
-                    document.getElementById('c4PlText').innerHTML = `单边: <span class="${S.c4_session_pl>0?'win-color':(S.c4_session_pl<0?'loss-color':'')}">${S.c4_session_pl}</span>`;
-                    document.getElementById('c5SeqText').innerText = S.c5_seq.length > 0 ? S.c5_seq.join(' - ') : '重置中';
-                    document.getElementById('c5PlText').innerHTML = `单边: <span class="${S.c5_session_pl>0?'win-color':(S.c5_session_pl<0?'loss-color':'')}">${S.c5_session_pl}</span>`;
-                    document.getElementById('lblFibLevel').innerText = '全局状态'; document.getElementById('fibLevel').innerText = '并发中';
-                    document.getElementById('lblTrigger').innerText = '当前目标'; let t4 = S.targetProp ? (S.targetProp === 'A' ? '[庄]' : '[闲]') : '空'; let t5 = S.macroTarget ? (S.macroTarget === 'D' ? '[双]' : '[单]') : '空'; document.getElementById('targetProp').innerText = `4:${t4} 5:${t5}`; document.getElementById('targetProp').className = 'cum-val';
-                    document.getElementById('lblStreak').innerText = '大路阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
-                    document.getElementById('lblProgress').innerText = '双核永动机挂机模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #b043ff 0%, #0a84ff 100%)'; document.getElementById('regPercent').innerText = '无限';
+                    document.getElementById('c4SeqText').innerText = S.c4_seq.length > 0 ? S.c4_seq.join(' - ') : '重置中'; document.getElementById('c4PlText').innerHTML = `单边: <span class="${S.c4_session_pl>0?'win-color':(S.c4_session_pl<0?'loss-color':'')}">${S.c4_session_pl}</span>`;
+                    document.getElementById('c5SeqText').innerText = S.c5_seq.length > 0 ? S.c5_seq.join(' - ') : '重置中'; document.getElementById('c5PlText').innerHTML = `单边: <span class="${S.c5_session_pl>0?'win-color':(S.c5_session_pl<0?'loss-color':'')}">${S.c5_session_pl}</span>`;
+                    document.getElementById('lblFibLevel').innerText = '模型阶段'; document.getElementById('fibLevel').innerText = '并发中';
+                    document.getElementById('lblTrigger').innerText = '运算目标'; let t4 = S.targetProp ? (S.targetProp === 'A' ? '[庄]' : '[闲]') : '空'; let t5 = S.macroTarget ? (S.macroTarget === 'D' ? '[双]' : '[单]') : '空'; document.getElementById('targetProp').innerText = `4:${t4} 5:${t5}`; document.getElementById('targetProp').className = 'cum-val';
+                    document.getElementById('lblStreak').innerText = '分布阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
+                    document.getElementById('lblProgress').innerText = '双核对冲量化模型 (自动迭代)'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #b043ff 0%, #0a84ff 100%)'; document.getElementById('regPercent').innerText = '运算中';
                 } else if (S.triggerMode === 7) {
                     labBox.style.display = 'none'; dualBox.style.display = 'none';
-                    document.getElementById('lblFibLevel').innerText = '注码阶段'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
-                    document.getElementById('lblTrigger').innerText = '锁定目标'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'打0(庄)':'打1(闲)') : "观察寻标"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
-                    document.getElementById('lblStreak').innerText = '当前连击'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
-                    document.getElementById('lblProgress').innerText = '防骗线追踪模式 (永动机)'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #ff9500 0%, #ff453a 100%)'; document.getElementById('regPercent').innerText = '无限';
+                    document.getElementById('lblFibLevel').innerText = '回归层级'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
+                    document.getElementById('lblTrigger').innerText = '状态锁定'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'指0(庄)':'指1(闲)') : "特征提取中"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
+                    document.getElementById('lblStreak').innerText = '当前序列'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
+                    document.getElementById('lblProgress').innerText = '自适应状态机量化模型'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #ff9500 0%, #ff453a 100%)'; document.getElementById('regPercent').innerText = '运算中';
                 } else {
                     dualBox.style.display = 'none';
-                    if (S.bettingMode === 'labouchere') { 
-                        labBox.style.display = 'block'; document.getElementById('lblFibLevel').innerText = '消数余量'; document.getElementById('fibLevel').innerText = S.labouchereSeq.length + '项'; document.getElementById('fibLevel').className = 'cum-val'; document.getElementById('labouchereSeqText').innerText = S.labouchereSeq.length > 0 ? S.labouchereSeq.join(' - ') : '已清空 (等待重置)'; 
-                    } else { 
-                        labBox.style.display = 'none'; document.getElementById('lblFibLevel').innerText = S.bettingMode === 'martingale' ? '注码(马丁)' : '注码(斐波)'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
-                    }
+                    if (S.bettingMode === 'labouchere') { labBox.style.display = 'block'; document.getElementById('lblFibLevel').innerText = '消数余量'; document.getElementById('fibLevel').innerText = S.labouchereSeq.length + '项'; document.getElementById('fibLevel').className = 'cum-val'; document.getElementById('labouchereSeqText').innerText = S.labouchereSeq.length > 0 ? S.labouchereSeq.join(' - ') : '已清空 (等待重置)'; } else { labBox.style.display = 'none'; document.getElementById('lblFibLevel').innerText = S.bettingMode === 'martingale' ? '注码(马丁)' : '注码(斐波)'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val'; }
                     if (S.triggerMode === 5) {
                         document.getElementById('lblTrigger').innerText = '当前目标'; document.getElementById('targetProp').innerText = S.macroTarget ? (S.macroTarget === 'D' ? '抓 [双]' : '抓 [单]') : "观望找信号"; document.getElementById('targetProp').className = S.macroTarget ? 'cum-val win-color' : 'cum-val wait-color';
                         document.getElementById('lblStreak').innerText = '宏观阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakRate').style.display = 'none';
@@ -317,25 +329,21 @@
                         document.getElementById('lblProgress').innerText = '连续手流水线追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else {
                         document.getElementById('lblTrigger').innerText = S.triggerMode === 3 ? '目标(3连触发)' : '目标(2连触发)'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'A (打0)':'B (打1)') : "无"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
-                        if (S.bettingMode === 'fib' && S.triggerMode === 2) {
-                            document.getElementById('lblStreak').innerText = '注码周期盈亏'; document.getElementById('streakCount').innerText = S.sessionPL; document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); document.getElementById('streakRate').style.display = 'none'; document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
-                        } else {
-                            document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度'; 
-                        }
-                        if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '已完成'; } 
-                        else { let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16; let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); document.getElementById('regFill').style.width = progress + '%'; document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; }
+                        if (S.bettingMode === 'fib' && S.triggerMode === 2) { document.getElementById('lblStreak').innerText = '注码周期盈亏'; document.getElementById('streakCount').innerText = S.sessionPL; document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); document.getElementById('streakRate').style.display = 'none'; document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
+                        } else { document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度'; }
+                        if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '完成'; } else { let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16; let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); document.getElementById('regFill').style.width = progress + '%'; document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; }
                     }
                 }
 
                 document.getElementById('betCount').innerText = (wins + losses);
-                document.getElementById('wlStatsText').innerText = `胜: ${wins} | 负: ${losses} | 胜率: ${(wins+losses)>0 ? Math.round((wins/(wins+losses))*100):0}%`;
+                document.getElementById('wlStatsText').innerText = `正: ${wins} | 负: ${losses} | 胜率: ${(wins+losses)>0 ? Math.round((wins/(wins+losses))*100):0}%`;
                 const wlList = document.getElementById('wlList'); wlList.innerHTML = (S.wlHistory || []).slice(-150).map(item => `<span class="${item==='✅'?'wl-item-win':'wl-item-loss'}">${item}</span>`).join(''); wlList.scrollTop = wlList.scrollHeight;
                 
                 const logBox = document.getElementById('sysLogBox');
                 if (S.sysLogs && S.sysLogs.length > 0) { logBox.innerHTML = S.sysLogs.map(l => `<div class="log-entry">${l}</div>`).join(''); logBox.scrollTop = logBox.scrollHeight; }
 
-                let instr = S.currentInstruction || { side: null, amt: 0, msg: "观 望", detail: "等待状态同步" };
-                let infTag = (S.triggerMode === 'hand' || S.triggerMode === 5 || S.triggerMode === 6 || S.triggerMode === 7 || S.bettingMode === 'labouchere') ? ' (无限)' : '';
+                let instr = S.currentInstruction || { side: null, amt: 0, msg: "观 望", detail: "等待数据录入" };
+                let infTag = (S.triggerMode === 'hand' || S.triggerMode === 5 || S.triggerMode === 6 || S.triggerMode === 7 || S.bettingMode === 'labouchere') ? ' (持续)' : '';
                 document.getElementById('phaseTag').innerText = `第 ${S.group} 组 | 位置 ${S.hand}${infTag}`;
                 let dir = document.getElementById('instrDir');
                 if (instr.amt === 0) { dir.innerText = instr.msg; dir.className = "side-Wait"; document.getElementById('instrAmt').innerText = ""; } 
