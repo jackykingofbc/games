@@ -64,7 +64,9 @@
         .bg-p { background: var(--player-bg); }
         .btn-big:active { transform: scale(0.95); box-shadow: 0 2px 0 rgba(0,0,0,0.4); filter: brightness(0.7); top: 4px; }
         .btn-disabled { filter: grayscale(100%) opacity(0.5) !important; pointer-events: none; box-shadow: none !important; top: 4px !important; transform: scale(0.98); }
-        .table-wrap { flex-grow: 1; background: #000; border-top: 1px solid var(--border); padding-bottom: 40px; }
+        
+        /* 🚨 核心改动：默认直接隐藏大表区域，只有管理员验证通过才显示 */
+        .table-wrap { flex-grow: 1; background: #000; border-top: 1px solid var(--border); padding-bottom: 40px; display: none; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; table-layout: fixed; }
         th { color: #888; padding: 8px 2px; font-weight: bold; border-bottom: 1px solid #333; font-size: 12px; position: sticky; top: 44px; background: #1a1a1a; z-index: 10; }
         td { padding: 10px 2px; border-bottom: 1px solid #222; color: #ddd; }
@@ -275,7 +277,6 @@
             window.requestAnimationFrame(() => {
                 if(!S) return;
 
-                // 🚀【前端同步认怂】：一旦后端强制更改了策略，前端立刻同步本地变量！
                 if (S.triggerMode && S.bettingMode) {
                     currentTriggerMode = S.triggerMode;
                     currentBettingMode = S.bettingMode;
@@ -289,13 +290,19 @@
                     ALL_STRATEGIES.forEach(str => { if (allowedArr.includes(str.id.toString())) { newHtml += `<option value="${str.val}">${str.label}</option>`; hasAny = true; } });
                     if (document.getElementById('selStrategy').innerHTML !== newHtml) document.getElementById('selStrategy').innerHTML = newHtml;
                     document.getElementById('btnSetting').style.display = hasAny ? 'block' : 'none';
+                    
+                    // 🚨 终极隐藏指令：只有上帝(admin)才能看到底部历史记录大表！
+                    if (S._role === 'admin') {
+                        document.querySelector('.table-wrap').style.display = 'block';
+                    } else {
+                        document.querySelector('.table-wrap').style.display = 'none';
+                    }
                 }
 
                 let btnB = document.querySelector('.bg-b');
                 let btnP = document.querySelector('.bg-p');
                 let statusLabel = document.getElementById('gameStatusLabel');
 
-                // 🚨 如果被剥夺了所有权限，锁定终端
                 if (S.gameStatus === 'LOCKED') {
                     statusLabel.innerText = "⛔ 未分配任何运算模型，终端已锁死"; 
                     statusLabel.style.color = "var(--loss)";
