@@ -111,18 +111,34 @@
 
         let currentEditUserId = null;
 
+        // 🛡️ 后台管理同样装配“断网自动重试防御”
+        async function safeFetch(url, payload, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (res.status >= 500) throw new Error("Server 500");
+                    const text = await res.text();
+                    try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; } 
+                    catch(e) { throw new Error("Not JSON"); }
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(r => setTimeout(r, 1000)); 
+                }
+            }
+        }
+
         async function adminLogin() {
             ADMIN_CRED.u = document.getElementById('adminU').value;
             ADMIN_CRED.p = document.getElementById('adminP').value;
             document.getElementById('msg').innerText = "加载雷达数据中...";
             try {
-                const res = await fetch(API_URL + '/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: ADMIN_CRED.u, password: ADMIN_CRED.p }) });
+                const res = await safeFetch(API_URL + '/api/admin/data', { username: ADMIN_CRED.u, password: ADMIN_CRED.p });
                 if (res.ok) {
                     document.getElementById('loginLayer').style.display = 'none';
                     document.getElementById('dashboard').style.display = 'block';
                     fetchDashboardData(); setInterval(fetchDashboardData, 10000); 
                 } else { document.getElementById('msg').innerText = "无权限，非法访问！"; }
-            } catch (err) { document.getElementById('msg').innerText = "网络阻断，无法连接服务器。"; }
+            } catch (err) { document.getElementById('msg').innerText = "网络断开，正在尝试重连..."; }
         }
 
         function formatRemainingTime(validUntilDate) {
@@ -133,66 +149,68 @@
         }
 
         async function fetchDashboardData() {
-            const res = await fetch(API_URL + '/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: ADMIN_CRED.u, password: ADMIN_CRED.p }) });
-            const data = await res.json();
-            
-            let statsMap = {};
-            (data.stats || []).forEach(s => { statsMap[s.username] = s; });
+            try {
+                const res = await safeFetch(API_URL + '/api/admin/data', { username: ADMIN_CRED.u, password: ADMIN_CRED.p });
+                const data = res.data;
+                
+                let statsMap = {};
+                (data.stats || []).forEach(s => { statsMap[s.username] = s; });
 
-            let usersHtml = "";
-            data.users.forEach(u => {
-                let expiryDate = new Date(u.valid_until);
-                let lastActive = u.last_active_at ? new Date(u.last_active_at) : null;
-                let isOnline = false;
-                let onlineText = '<span style="color:#666; font-size:11px;">[离线脱机]</span>';
-                if (lastActive) {
-                    let minsAgo = (new Date() - lastActive) / 60000;
-                    if (minsAgo < 30) {
-                        isOnline = true;
-                        onlineText = `<span style="color:var(--win-green); font-size:11px; font-weight:bold; text-shadow: 0 0 5px var(--win-green);">[🟢 节点连接中]</span>`;
-                    } else {
-                        let hAgo = Math.floor(minsAgo / 60);
-                        onlineText = `<span style="color:#888; font-size:11px;">[脱机 ${hAgo} 小时]</span>`;
+                let usersHtml = "";
+                data.users.forEach(u => {
+                    let expiryDate = new Date(u.valid_until);
+                    let lastActive = u.last_active_at ? new Date(u.last_active_at) : null;
+                    let isOnline = false;
+                    let onlineText = '<span style="color:#666; font-size:11px;">[离线脱机]</span>';
+                    if (lastActive) {
+                        let minsAgo = (new Date() - lastActive) / 60000;
+                        if (minsAgo < 30) {
+                            isOnline = true;
+                            onlineText = `<span style="color:var(--win-green); font-size:11px; font-weight:bold; text-shadow: 0 0 5px var(--win-green);">[🟢 节点连接中]</span>`;
+                        } else {
+                            let hAgo = Math.floor(minsAgo / 60);
+                            onlineText = `<span style="color:#888; font-size:11px;">[脱机 ${hAgo} 小时]</span>`;
+                        }
                     }
-                }
 
-                let ts = statsMap[u.username] || { online_seconds: 0, hands_played: 0, games_played: 0, daily_pl: 0 };
-                let todayMins = Math.floor(ts.online_seconds / 60);
-                let plColor = ts.daily_pl > 0 ? "var(--win-green)" : (ts.daily_pl < 0 ? "var(--loss-red)" : "#888");
-                let stratText = u.role === 'admin' ? '<span style="color:var(--warn-yellow);font-weight:bold;">全量核心组</span>' : (u.allowed_strategies ? `<span style="color:#0a84ff;font-weight:bold;">[${u.allowed_strategies}]</span>` : '<span style="color:#888">未分配模型</span>');
+                    let ts = statsMap[u.username] || { online_seconds: 0, hands_played: 0, games_played: 0, daily_pl: 0 };
+                    let todayMins = Math.floor(ts.online_seconds / 60);
+                    let plColor = ts.daily_pl > 0 ? "var(--win-green)" : (ts.daily_pl < 0 ? "var(--loss-red)" : "#888");
+                    let stratText = u.role === 'admin' ? '<span style="color:var(--warn-yellow);font-weight:bold;">全量核心组</span>' : (u.allowed_strategies ? `<span style="color:#0a84ff;font-weight:bold;">[${u.allowed_strategies}]</span>` : '<span style="color:#888">未分配模型</span>');
 
-                usersHtml += `<tr>
-                    <td><span class="stat-tag">NODE-${u.id}</span></td>
-                    <td>
-                        <div style="font-weight:bold; color:#fff; font-size:14px;">${u.username} ${onlineText}</div>
-                        <div style="color:#666; font-size:11px;">Pwd: ${u.password}</div>
-                    </td>
-                    <td>
-                        <div style="color:#aaa; font-size:12px;">运算时长: <span style="color:#fff">${todayMins} 分钟</span></div>
-                        <div style="color:#aaa; font-size:12px;">录入量: <span style="color:#fff">${ts.games_played} 组</span> (${ts.hands_played}条记录)</div>
-                    </td>
-                    <td><span style="font-size:16px; font-weight:bold; color:${plColor}">${ts.daily_pl > 0 ? '+'+ts.daily_pl : ts.daily_pl}</span></td>
-                    <td>
-                        <div style="color:#aaa;font-size:11px;">${u.role==='admin' ? '无限期' : expiryDate.toLocaleDateString()}</div>
-                        ${u.role==='admin' ? '' : formatRemainingTime(expiryDate)}
-                    </td>
-                    <td>${stratText}</td>
-                    <td>
-                        ${u.role !== 'admin' ? `
-                            <div style="display:flex; gap:4px; margin-bottom:4px;">
-                                <button class="btn btn-blue" onclick="viewUserHistory('${u.username}')">查阅归档</button>
-                                <button class="btn" style="background:#5e5ce6; color:#fff;" onclick="openPermissionModal(${u.id}, '${u.username}', '${u.allowed_strategies || ''}')">配模型</button>
-                            </div>
-                            <div style="display:flex; gap:4px;">
-                                <button class="btn btn-green" onclick="manageUser('EDIT_TIME', ${u.id})">+授权</button>
-                                <button class="btn btn-blue" onclick="manageUser('EDIT_USER', ${u.id}, '${u.username}')">改签</button>
-                                <button class="btn btn-warn" onclick="manageUser('TOGGLE_PAUSE', ${u.id})">${u.status==='paused' ? '解封' : '冻结'}</button>
-                            </div>
-                        ` : '-'}
-                    </td>
-                </tr>`;
-            });
-            document.getElementById('usersTableBody').innerHTML = usersHtml;
+                    usersHtml += `<tr>
+                        <td><span class="stat-tag">NODE-${u.id}</span></td>
+                        <td>
+                            <div style="font-weight:bold; color:#fff; font-size:14px;">${u.username} ${onlineText}</div>
+                            <div style="color:#666; font-size:11px;">Pwd: ${u.password}</div>
+                        </td>
+                        <td>
+                            <div style="color:#aaa; font-size:12px;">运算时长: <span style="color:#fff">${todayMins} 分钟</span></div>
+                            <div style="color:#aaa; font-size:12px;">录入量: <span style="color:#fff">${ts.games_played} 组</span> (${ts.hands_played}条记录)</div>
+                        </td>
+                        <td><span style="font-size:16px; font-weight:bold; color:${plColor}">${ts.daily_pl > 0 ? '+'+ts.daily_pl : ts.daily_pl}</span></td>
+                        <td>
+                            <div style="color:#aaa;font-size:11px;">${u.role==='admin' ? '无限期' : expiryDate.toLocaleDateString()}</div>
+                            ${u.role==='admin' ? '' : formatRemainingTime(expiryDate)}
+                        </td>
+                        <td>${stratText}</td>
+                        <td>
+                            ${u.role !== 'admin' ? `
+                                <div style="display:flex; gap:4px; margin-bottom:4px;">
+                                    <button class="btn btn-blue" onclick="viewUserHistory('${u.username}')">查阅归档</button>
+                                    <button class="btn" style="background:#5e5ce6; color:#fff;" onclick="openPermissionModal(${u.id}, '${u.username}', '${u.allowed_strategies || ''}')">配模型</button>
+                                </div>
+                                <div style="display:flex; gap:4px;">
+                                    <button class="btn btn-green" onclick="manageUser('EDIT_TIME', ${u.id})">+授权</button>
+                                    <button class="btn btn-blue" onclick="manageUser('EDIT_USER', ${u.id}, '${u.username}')">改签</button>
+                                    <button class="btn btn-warn" onclick="manageUser('TOGGLE_PAUSE', ${u.id})">${u.status==='paused' ? '解封' : '冻结'}</button>
+                                </div>
+                            ` : '-'}
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('usersTableBody').innerHTML = usersHtml;
+            } catch(e) {} // 后台轮询静默失败
         }
 
         async function viewUserHistory(targetUser) {
@@ -200,29 +218,30 @@
             document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;">读取金库档案中...</td></tr>';
             document.getElementById('historyLayer').style.display = 'flex';
 
-            const res = await fetch(API_URL + '/api/admin/user_games', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: ADMIN_CRED.u, password: ADMIN_CRED.p, targetUser }) });
-            const games = await res.json();
+            try {
+                const res = await safeFetch(API_URL + '/api/admin/user_games', { username: ADMIN_CRED.u, password: ADMIN_CRED.p, targetUser });
+                const games = res.data;
 
-            let html = "";
-            if (games.length === 0) { html = '<tr><td colspan="5" style="text-align:center; color:#888;">该节点暂无有效样本数据</td></tr>'; } 
-            else {
-                games.forEach(g => {
-                    let stDate = new Date(g.start_time).toLocaleString(); let edDate = new Date(g.end_time);
-                    let diffMins = Math.max(1, Math.floor((edDate - new Date(g.start_time)) / 60000));
-                    let plColor = g.profit_loss > 0 ? "var(--win-green)" : (g.profit_loss < 0 ? "var(--loss-red)" : "#888");
-                    
-                    let detailsHtml = "";
-                    if (g.records_json && g.records_json.length > 0) {
-                        detailsHtml = `<div style="max-height:80px; overflow-y:auto; font-size:11px; background:#111; padding:5px; border-radius:4px; color:#aaa; font-family:monospace;">`;
-                        // 🚨 战绩明细去掉庄闲
-                        g.records_json.forEach(r => { detailsHtml += `[第${r.id}组] 特征:${r.h1==='B'?'0':(r.h1==='P'?'1':'-')}${r.h2==='B'?'0':(r.h2==='P'?'1':'-')} -> ${r.action.replace(/<br>/g, ' ')} | 参数波动:${r.pl}<br>`; });
-                        detailsHtml += `</div>`;
-                    } else { detailsHtml = `<span style="color:#666">空样本拦截(强制重置)</span>`; }
+                let html = "";
+                if (!games || games.length === 0) { html = '<tr><td colspan="5" style="text-align:center; color:#888;">该节点暂无有效样本数据</td></tr>'; } 
+                else {
+                    games.forEach(g => {
+                        let stDate = new Date(g.start_time).toLocaleString(); let edDate = new Date(g.end_time);
+                        let diffMins = Math.max(1, Math.floor((edDate - new Date(g.start_time)) / 60000));
+                        let plColor = g.profit_loss > 0 ? "var(--win-green)" : (g.profit_loss < 0 ? "var(--loss-red)" : "#888");
+                        
+                        let detailsHtml = "";
+                        if (g.records_json && g.records_json.length > 0) {
+                            detailsHtml = `<div style="max-height:80px; overflow-y:auto; font-size:11px; background:#111; padding:5px; border-radius:4px; color:#aaa; font-family:monospace;">`;
+                            g.records_json.forEach(r => { detailsHtml += `[第${r.id}组] 特征:${r.h1==='B'?'0':(r.h1==='P'?'1':'-')}${r.h2==='B'?'0':(r.h2==='P'?'1':'-')} -> ${r.action.replace(/<br>/g, ' ')} | 参数波动:${r.pl}<br>`; });
+                            detailsHtml += `</div>`;
+                        } else { detailsHtml = `<span style="color:#666">空样本拦截(强制重置)</span>`; }
 
-                    html += `<tr><td style="color:#ccc;">${stDate}</td><td>${diffMins} 分钟</td><td><span class="stat-tag">${g.hands_count} 记录</span></td><td><span style="font-weight:bold; font-size:14px; color:${plColor};">${g.profit_loss > 0 ? '+'+g.profit_loss : g.profit_loss}</span></td><td>${detailsHtml}</td></tr>`;
-                });
-            }
-            document.getElementById('historyTableBody').innerHTML = html;
+                        html += `<tr><td style="color:#ccc;">${stDate}</td><td>${diffMins} 分钟</td><td><span class="stat-tag">${g.hands_count} 记录</span></td><td><span style="font-weight:bold; font-size:14px; color:${plColor};">${g.profit_loss > 0 ? '+'+g.profit_loss : g.profit_loss}</span></td><td>${detailsHtml}</td></tr>`;
+                    });
+                }
+                document.getElementById('historyTableBody').innerHTML = html;
+            } catch(e) { document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--loss-red);">网络读取超时，请关闭重试。</td></tr>'; }
         }
 
         function openPermissionModal(targetId, username, currentStrats) {
@@ -272,7 +291,7 @@
         async function sendManageRequest(reqBody) {
             reqBody.username = ADMIN_CRED.u; reqBody.password = ADMIN_CRED.p;
             try {
-                const res = await fetch(API_URL + '/api/admin/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody) });
+                const res = await safeFetch(API_URL + '/api/admin/manage', reqBody);
                 if(res.ok) { if (reqBody.manageAction === 'ADD') { document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = ''; } fetchDashboardData(); } 
                 else { alert("指令被云端拒绝！"); }
             } catch(e) { alert("网络传输阻断"); }
