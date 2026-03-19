@@ -64,8 +64,6 @@
         .bg-p { background: var(--player-bg); }
         .btn-big:active { transform: scale(0.95); box-shadow: 0 2px 0 rgba(0,0,0,0.4); filter: brightness(0.7); top: 4px; }
         .btn-disabled { filter: grayscale(100%) opacity(0.5) !important; pointer-events: none; box-shadow: none !important; top: 4px !important; transform: scale(0.98); }
-        
-        /* 🚨 核心改动：默认直接隐藏大表区域，只有管理员验证通过才显示 */
         .table-wrap { flex-grow: 1; background: #000; border-top: 1px solid var(--border); padding-bottom: 40px; display: none; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; table-layout: fixed; }
         th { color: #888; padding: 8px 2px; font-weight: bold; border-bottom: 1px solid #333; font-size: 12px; position: sticky; top: 44px; background: #1a1a1a; z-index: 10; }
@@ -114,16 +112,16 @@
 
         <div class="dashboard">
             <div class="pl-display-area">
-                <div class="pl-label">账户总净盈亏 (NET P/L)</div>
+                <div class="pl-label">账户总净参数 (NET P/L)</div>
                 <div class="pl-value win-color" id="totalPL">+0.00</div>
             </div>
             <div class="comm-row" id="gameStatusLabel" style="color: var(--accent); font-size: 14px;">等待连接云端...</div>
 
             <div class="cum-scores-row">
-                <div class="cum-item"><span class="cum-label" id="lblFibLevel">注码阶段</span><div class="cum-val-box"><span class="cum-val" id="fibLevel">0</span></div></div>
-                <div class="cum-item"><span class="cum-label" id="lblTrigger">目标属性</span><div class="cum-val-box"><span class="cum-val" id="targetProp">-</span></div></div>
-                <div class="cum-item"><span class="cum-label" id="lblStreak">连击层数</span><div class="cum-val-box"><span class="cum-val" id="streakCount">0</span><span class="cum-rate" id="streakRate">/4</span></div></div>
-                <div class="cum-item"><span class="cum-label">总下注数</span><div class="cum-val-box"><span class="cum-val" id="betCount">0</span></div></div>
+                <div class="cum-item"><span class="cum-label" id="lblFibLevel">模型阶段</span><div class="cum-val-box"><span class="cum-val" id="fibLevel">0</span></div></div>
+                <div class="cum-item"><span class="cum-label" id="lblTrigger">锁定状态</span><div class="cum-val-box"><span class="cum-val" id="targetProp">-</span></div></div>
+                <div class="cum-item"><span class="cum-label" id="lblStreak">当前序列</span><div class="cum-val-box"><span class="cum-val" id="streakCount">0</span><span class="cum-rate" id="streakRate">/4</span></div></div>
+                <div class="cum-item"><span class="cum-label">记录条数</span><div class="cum-val-box"><span class="cum-val" id="betCount">0</span></div></div>
             </div>
 
             <div class="reg-progress-area">
@@ -132,7 +130,7 @@
             </div>
 
             <div id="sysLogBox" class="sys-log-box"></div>
-            <div id="labouchereBox" class="labouchere-display"><span class="labouchere-label">当前消数序列 (LABOUCHERE)</span><span id="labouchereSeqText">1 - 1 - 1</span></div>
+            <div id="labouchereBox" class="labouchere-display"><span class="labouchere-label">序列分布 (LABOUCHERE)</span><span id="labouchereSeqText">1 - 1 - 1</span></div>
 
             <div id="dualCoreBox" class="dual-core-container">
                 <div class="core-box"><div class="core-title">🧠 左脑 [策4]</div><div class="core-seq" id="c4SeqText">1-1-1</div><div class="core-pl" id="c4PlText"></div></div>
@@ -141,29 +139,29 @@
 
             <div class="instr-card">
                 <div>
-                    <div class="phase-text" id="phaseTag">等待开局 - 第 1 组 | 位置 1</div>
+                    <div class="phase-text" id="phaseTag">等待输入 - 第 1 组 | 位置 1</div>
                     <div class="main-instr" id="mainInstr"><span id="instrDir" class="side-Wait">连接中</span><span id="instrAmt" style="font-size:20px; color:#fff"></span></div>
                     <div style="font-size: 10px; color: #888; margin-top: 5px; min-height:12px;" id="instrDetail">等待引擎指令...</div>
                 </div>
             </div>
 
             <div class="wl-container">
-                <div class="wl-stats"><span>下注记录 (只显最新150条)</span><span id="wlStatsText">胜: 0 | 负: 0 | 胜率: 0%</span></div>
+                <div class="wl-stats"><span>运算记录 (只显最新150条)</span><span id="wlStatsText">正: 0 | 负: 0 | 成功率: 0%</span></div>
                 <div class="wl-list" id="wlList"></div>
             </div>
 
             <div class="btn-row">
-                <button class="btn-big bg-b" onclick="sendAction('INPUT', 'B')">录入 0 (庄)</button>
-                <button class="btn-big bg-p" onclick="sendAction('INPUT', 'P')">录入 1 (闲)</button>
+                <button class="btn-big bg-b" onclick="sendAction('INPUT', 'B')">录入 0</button>
+                <button class="btn-big bg-p" onclick="sendAction('INPUT', 'P')">录入 1</button>
             </div>
             <div style="text-align:right; margin-top:5px; display: flex; justify-content: flex-end; align-items: center;">
-                <button class="btn-small" style="padding: 10px 20px; font-size: 14px; background: #2c2c2e; border: 1px solid #444;" onclick="sendAction('UNDO')">⏪ 撤销上一手</button>
+                <button class="btn-small" style="padding: 10px 20px; font-size: 14px; background: #2c2c2e; border: 1px solid #444;" onclick="sendAction('UNDO')">⏪ 撤销上一条</button>
             </div>
         </div>
 
         <div class="table-wrap">
             <table>
-                <thead><tr><th width="15%">组</th><th width="35%">结果(1/2)</th><th width="25%">动作盈亏</th><th width="25%">总盈亏</th></tr></thead>
+                <thead><tr><th width="15%">组</th><th width="35%">特征(1/2)</th><th width="25%">动作盈亏</th><th width="25%">总参数</th></tr></thead>
                 <tbody id="gameTable"></tbody>
             </table>
         </div>
@@ -291,7 +289,6 @@
                     if (document.getElementById('selStrategy').innerHTML !== newHtml) document.getElementById('selStrategy').innerHTML = newHtml;
                     document.getElementById('btnSetting').style.display = hasAny ? 'block' : 'none';
                     
-                    // 🚨 终极隐藏指令：只有上帝(admin)才能看到底部历史记录大表！
                     if (S._role === 'admin') {
                         document.querySelector('.table-wrap').style.display = 'block';
                     } else {
@@ -332,28 +329,39 @@
                     document.getElementById('c4SeqText').innerText = S.c4_seq.length > 0 ? S.c4_seq.join(' - ') : '重置中'; document.getElementById('c4PlText').innerHTML = `单边: <span class="${S.c4_session_pl>0?'win-color':(S.c4_session_pl<0?'loss-color':'')}">${S.c4_session_pl}</span>`;
                     document.getElementById('c5SeqText').innerText = S.c5_seq.length > 0 ? S.c5_seq.join(' - ') : '重置中'; document.getElementById('c5PlText').innerHTML = `单边: <span class="${S.c5_session_pl>0?'win-color':(S.c5_session_pl<0?'loss-color':'')}">${S.c5_session_pl}</span>`;
                     document.getElementById('lblFibLevel').innerText = '模型阶段'; document.getElementById('fibLevel').innerText = '并发中';
-                    document.getElementById('lblTrigger').innerText = '运算目标'; let t4 = S.targetProp ? (S.targetProp === 'A' ? '[庄]' : '[闲]') : '空'; let t5 = S.macroTarget ? (S.macroTarget === 'D' ? '[双]' : '[单]') : '空'; document.getElementById('targetProp').innerText = `4:${t4} 5:${t5}`; document.getElementById('targetProp').className = 'cum-val';
+                    
+                    // 🚨 核心改动：把所有的 庄/闲 换成 0/1
+                    document.getElementById('lblTrigger').innerText = '运算目标'; let t4 = S.targetProp ? (S.targetProp === 'A' ? '[0]' : '[1]') : '空'; let t5 = S.macroTarget ? (S.macroTarget === 'D' ? '[双]' : '[单]') : '空'; document.getElementById('targetProp').innerText = `4:${t4} 5:${t5}`; document.getElementById('targetProp').className = 'cum-val';
+                    
                     document.getElementById('lblStreak').innerText = '分布阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
                     document.getElementById('lblProgress').innerText = '双核对冲量化模型 (自动迭代)'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #b043ff 0%, #0a84ff 100%)'; document.getElementById('regPercent').innerText = '运算中';
                 } else if (S.triggerMode === 7) {
                     labBox.style.display = 'none'; dualBox.style.display = 'none';
                     document.getElementById('lblFibLevel').innerText = '回归层级'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
-                    document.getElementById('lblTrigger').innerText = '状态锁定'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'指0(庄)':'指1(闲)') : "特征提取中"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
+                    
+                    // 🚨 核心改动：把所有的 庄/闲 换成 0/1
+                    document.getElementById('lblTrigger').innerText = '状态锁定'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'指 0':'指 1') : "特征提取中"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
+                    
                     document.getElementById('lblStreak').innerText = '当前序列'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
                     document.getElementById('lblProgress').innerText = '自适应状态机量化模型'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #ff9500 0%, #ff453a 100%)'; document.getElementById('regPercent').innerText = '运算中';
                 } else {
                     dualBox.style.display = 'none';
                     if (S.bettingMode === 'labouchere') { labBox.style.display = 'block'; document.getElementById('lblFibLevel').innerText = '消数余量'; document.getElementById('fibLevel').innerText = S.labouchereSeq.length + '项'; document.getElementById('fibLevel').className = 'cum-val'; document.getElementById('labouchereSeqText').innerText = S.labouchereSeq.length > 0 ? S.labouchereSeq.join(' - ') : '已清空 (等待重置)'; } else { labBox.style.display = 'none'; document.getElementById('lblFibLevel').innerText = S.bettingMode === 'martingale' ? '注码(马丁)' : '注码(斐波)'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val'; }
                     if (S.triggerMode === 5) {
-                        document.getElementById('lblTrigger').innerText = '当前目标'; document.getElementById('targetProp').innerText = S.macroTarget ? (S.macroTarget === 'D' ? '抓 [双]' : '抓 [单]') : "观望找信号"; document.getElementById('targetProp').className = S.macroTarget ? 'cum-val win-color' : 'cum-val wait-color';
+                        document.getElementById('lblTrigger').innerText = '当前目标'; document.getElementById('targetProp').innerText = S.macroTarget ? (S.macroTarget === 'D' ? '抓 [双]' : '抓 [单]') : "观望找特征"; document.getElementById('targetProp').className = S.macroTarget ? 'cum-val win-color' : 'cum-val wait-color';
                         document.getElementById('lblStreak').innerText = '宏观阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakRate').style.display = 'none';
                         document.getElementById('lblProgress').innerText = '拉布谢尔无限循环追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else if (S.triggerMode === 'hand') {
                         document.getElementById('lblTrigger').innerText = '当前阶段'; let pName = S.s3State === 'PHASE1' ? 'P1(观望)' : (S.s3State === 'PHASE2' ? 'P2(一裁)' : 'P3(二裁)'); document.getElementById('targetProp').innerText = pName; document.getElementById('targetProp').className = 'cum-val wait-color';
-                        document.getElementById('lblStreak').innerText = '攻击目标'; document.getElementById('streakCount').innerText = S.s3Target ? (S.s3Target==='B'?'0(庄)':'1(闲)') : '-'; document.getElementById('streakCount').className = S.s3Target ? (S.s3Target==='B'?'cum-val side-B':'cum-val side-P') : 'cum-val'; document.getElementById('streakRate').style.display = 'none';
+                        
+                        // 🚨 核心改动：把所有的 庄/闲 换成 0/1
+                        document.getElementById('lblStreak').innerText = '攻击目标'; document.getElementById('streakCount').innerText = S.s3Target ? (S.s3Target==='B'?'0':'1') : '-'; document.getElementById('streakCount').className = S.s3Target ? (S.s3Target==='B'?'cum-val side-B':'cum-val side-P') : 'cum-val'; document.getElementById('streakRate').style.display = 'none';
+                        
                         document.getElementById('lblProgress').innerText = '连续手流水线追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else {
-                        document.getElementById('lblTrigger').innerText = S.triggerMode === 3 ? '目标(3连触发)' : '目标(2连触发)'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'A (打0)':'B (打1)') : "无"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
+                        // 🚨 核心改动：把所有的 庄/闲 换成 0/1
+                        document.getElementById('lblTrigger').innerText = S.triggerMode === 3 ? '目标(3连特征)' : '目标(2连特征)'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'指 0':'指 1') : "无"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
+                        
                         if (S.bettingMode === 'fib' && S.triggerMode === 2) { document.getElementById('lblStreak').innerText = '注码周期盈亏'; document.getElementById('streakCount').innerText = S.sessionPL; document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); document.getElementById('streakRate').style.display = 'none'; document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
                         } else { document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度'; }
                         if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '完成'; } else { let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16; let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); document.getElementById('regFill').style.width = progress + '%'; document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; }
@@ -361,7 +369,7 @@
                 }
 
                 document.getElementById('betCount').innerText = (wins + losses);
-                document.getElementById('wlStatsText').innerText = `正: ${wins} | 负: ${losses} | 胜率: ${(wins+losses)>0 ? Math.round((wins/(wins+losses))*100):0}%`;
+                document.getElementById('wlStatsText').innerText = `正: ${wins} | 负: ${losses} | 成功率: ${(wins+losses)>0 ? Math.round((wins/(wins+losses))*100):0}%`;
                 const wlList = document.getElementById('wlList'); wlList.innerHTML = (S.wlHistory || []).slice(-150).map(item => `<span class="${item==='✅'?'wl-item-win':'wl-item-loss'}">${item}</span>`).join(''); wlList.scrollTop = wlList.scrollHeight;
                 
                 const logBox = document.getElementById('sysLogBox');
@@ -371,8 +379,11 @@
                 let infTag = (S.triggerMode === 'hand' || S.triggerMode === 5 || S.triggerMode === 6 || S.triggerMode === 7 || S.bettingMode === 'labouchere') ? ' (持续)' : '';
                 document.getElementById('phaseTag').innerText = `第 ${S.group} 组 | 位置 ${S.hand}${infTag}`;
                 let dir = document.getElementById('instrDir');
+                
+                // 🚨 核心改动：把所有的 庄/闲 换成 0/1
                 if (instr.amt === 0) { dir.innerText = instr.msg; dir.className = "side-Wait"; document.getElementById('instrAmt').innerText = ""; } 
-                else { dir.innerText = instr.side === 'B' ? "庄(0)" : "闲(1)"; dir.className = instr.side === 'B' ? "side-B" : "side-P"; document.getElementById('instrAmt').innerText = instr.amt; }
+                else { dir.innerText = instr.side === 'B' ? "0" : "1"; dir.className = instr.side === 'B' ? "side-B" : "side-P"; document.getElementById('instrAmt').innerText = instr.amt; }
+                
                 document.getElementById('instrDetail').innerText = instr.detail;
 
                 let html = "";
