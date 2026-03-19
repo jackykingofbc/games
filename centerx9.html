@@ -99,7 +99,6 @@
         const API_URL = "https://quant-o79q.onrender.com"; 
         let ADMIN_CRED = { u: '', p: '' };
         
-        // 🚨 策略名称已经全部高端化
         const ALL_STRATEGIES = [
             { id: 1, label: '策略 1：2连触发 + 斐波那契' },
             { id: 2, label: '策略 2：3连触发 + 马丁格尔' },
@@ -215,7 +214,8 @@
                     let detailsHtml = "";
                     if (g.records_json && g.records_json.length > 0) {
                         detailsHtml = `<div style="max-height:80px; overflow-y:auto; font-size:11px; background:#111; padding:5px; border-radius:4px; color:#aaa; font-family:monospace;">`;
-                        g.records_json.forEach(r => { detailsHtml += `[第${r.id}组] 特征:${r.h1}${r.h2} -> ${r.action.replace(/<br>/g, ' ')} | 参数波动:${r.pl}<br>`; });
+                        // 🚨 战绩明细去掉庄闲
+                        g.records_json.forEach(r => { detailsHtml += `[第${r.id}组] 特征:${r.h1==='B'?'0':(r.h1==='P'?'1':'-')}${r.h2==='B'?'0':(r.h2==='P'?'1':'-')} -> ${r.action.replace(/<br>/g, ' ')} | 参数波动:${r.pl}<br>`; });
                         detailsHtml += `</div>`;
                     } else { detailsHtml = `<span style="color:#666">空样本拦截(强制重置)</span>`; }
 
