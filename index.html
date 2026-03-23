@@ -64,8 +64,6 @@
         .bg-p { background: var(--player-bg); }
         .btn-big:active { transform: scale(0.95); box-shadow: 0 2px 0 rgba(0,0,0,0.4); filter: brightness(0.7); top: 4px; }
         .btn-disabled { filter: grayscale(100%) opacity(0.5) !important; pointer-events: none; box-shadow: none !important; top: 4px !important; transform: scale(0.98); }
-        
-        /* 🚨 核心改动：默认直接隐藏大表区域，只有管理员验证通过才显示 */
         .table-wrap { flex-grow: 1; background: #000; border-top: 1px solid var(--border); padding-bottom: 40px; display: none; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; table-layout: fixed; }
         th { color: #888; padding: 8px 2px; font-weight: bold; border-bottom: 1px solid #333; font-size: 12px; position: sticky; top: 44px; background: #1a1a1a; z-index: 10; }
@@ -177,6 +175,7 @@
         let currentBettingMode = 'fib';
         let idleTimer = 0; 
 
+        // 🚨 增加了 策略 8
         const ALL_STRATEGIES = [
             { id: 1, val: '2_fib', label: '策略 1：2连触发 + 斐波那契' },
             { id: 2, val: '3_martingale', label: '策略 2：3连触发 + 马丁格尔' },
@@ -184,7 +183,8 @@
             { id: 4, val: '2_labouchere', label: '策略 4：2连触发 + 拉布谢尔' },
             { id: 5, val: '5_labouchere', label: '策略 5：大路四式接力 + 拉布谢尔' },
             { id: 6, val: '6_labouchere', label: '策略 6：双核对冲引擎' },
-            { id: 7, val: '7_fib2', label: '策略 7：自适应状态机追踪 (防伪信号 / 动态退布)' }
+            { id: 7, val: '7_fib2', label: '策略 7：自适应状态机追踪 (防伪信号 / 动态退布)' },
+            { id: 8, val: '7_staircase', label: '策略 8：自适应状态机追踪 (防伪信号 / 楼梯缆)' }
         ];
 
         window.onload = function() {
@@ -285,13 +285,12 @@
                 }
                 
                 if (S._role) {
-                    let allowedArr = S._role === 'admin' ? ["1","2","3","4","5","6","7"] : (S._allowedStrategies ? S._allowedStrategies.split(',').map(s=>s.trim()) : []);
+                    let allowedArr = S._role === 'admin' ? ["1","2","3","4","5","6","7","8"] : (S._allowedStrategies ? S._allowedStrategies.split(',').map(s=>s.trim()) : []);
                     let newHtml = ''; let hasAny = false;
                     ALL_STRATEGIES.forEach(str => { if (allowedArr.includes(str.id.toString())) { newHtml += `<option value="${str.val}">${str.label}</option>`; hasAny = true; } });
                     if (document.getElementById('selStrategy').innerHTML !== newHtml) document.getElementById('selStrategy').innerHTML = newHtml;
                     document.getElementById('btnSetting').style.display = hasAny ? 'block' : 'none';
                     
-                    // 🚨 终极隐藏指令：只有上帝(admin)才能看到底部历史记录大表！
                     if (S._role === 'admin') {
                         document.querySelector('.table-wrap').style.display = 'block';
                     } else {
@@ -313,7 +312,9 @@
                     else if (S.gameStatus === 'STREAK_LIMIT') { statusLabel.innerText = "🛑 阈值截断 - 请点击重置"; statusLabel.style.color = "var(--accent)"; } 
                     else if (S.gameStatus === 'GAMEOVER') { statusLabel.innerText = "⚠️ 样本结束 - 周期窗口耗尽"; statusLabel.style.color = "var(--loss)"; } 
                     else {
-                        if (S.triggerMode === 7) { statusLabel.innerText = "🟠 自适应状态机 (云端守护) - 锁定攻击中"; statusLabel.style.color = "var(--warn-yellow)"; }
+                        // 🚨 增加了 策略 8 的显示区分
+                        if (S.triggerMode === 7 && S.bettingMode === 'staircase') { statusLabel.innerText = "🔵 策略 8 (云端守护) - 状态机与楼梯缆"; statusLabel.style.color = "#0a84ff"; }
+                        else if (S.triggerMode === 7) { statusLabel.innerText = "🟠 自适应状态机 (云端守护) - 锁定攻击中"; statusLabel.style.color = "var(--warn-yellow)"; }
                         else if (S.triggerMode === 6) { statusLabel.innerText = "🟣 策略 6 (云端守护) - 双核对冲"; statusLabel.style.color = "var(--accent)";}
                         else if (S.triggerMode === 5) { statusLabel.innerText = "🟢 策略 5 (云端守护) - 大路四式"; statusLabel.style.color = "var(--accent)";} 
                         else if (S.triggerMode === 'hand') { statusLabel.innerText = "🟢 策略 3 (云端守护) - 连续流水线"; statusLabel.style.color = "var(--accent)";} 
@@ -337,15 +338,16 @@
                     document.getElementById('lblProgress').innerText = '双核对冲量化模型 (自动迭代)'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #b043ff 0%, #0a84ff 100%)'; document.getElementById('regPercent').innerText = '运算中';
                 } else if (S.triggerMode === 7) {
                     labBox.style.display = 'none'; dualBox.style.display = 'none';
-                    document.getElementById('lblFibLevel').innerText = '回归层级'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
+                    // 🚨 增加了 策略 8 的文案区分
+                    document.getElementById('lblFibLevel').innerText = S.bettingMode === 'staircase' ? '注码(楼梯)' : '回归层级'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val';
                     document.getElementById('lblTrigger').innerText = '状态锁定'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'指0(庄)':'指1(闲)') : "特征提取中"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
                     document.getElementById('lblStreak').innerText = '当前序列'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'none';
-                    document.getElementById('lblProgress').innerText = '自适应状态机量化模型'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #ff9500 0%, #ff453a 100%)'; document.getElementById('regPercent').innerText = '运算中';
+                    document.getElementById('lblProgress').innerText = S.bettingMode === 'staircase' ? '自适应状态机模型 (楼梯缆)' : '自适应状态机量化模型'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regFill').style.background = 'linear-gradient(90deg, #ff9500 0%, #ff453a 100%)'; document.getElementById('regPercent').innerText = '运算中';
                 } else {
                     dualBox.style.display = 'none';
                     if (S.bettingMode === 'labouchere') { labBox.style.display = 'block'; document.getElementById('lblFibLevel').innerText = '消数余量'; document.getElementById('fibLevel').innerText = S.labouchereSeq.length + '项'; document.getElementById('fibLevel').className = 'cum-val'; document.getElementById('labouchereSeqText').innerText = S.labouchereSeq.length > 0 ? S.labouchereSeq.join(' - ') : '已清空 (等待重置)'; } else { labBox.style.display = 'none'; document.getElementById('lblFibLevel').innerText = S.bettingMode === 'martingale' ? '注码(马丁)' : '注码(斐波)'; document.getElementById('fibLevel').innerText = S.fibIdx; document.getElementById('fibLevel').className = 'cum-val'; }
                     if (S.triggerMode === 5) {
-                        document.getElementById('lblTrigger').innerText = '当前目标'; document.getElementById('targetProp').innerText = S.macroTarget ? (S.macroTarget === 'D' ? '抓 [双]' : '抓 [单]') : "观望找信号"; document.getElementById('targetProp').className = S.macroTarget ? 'cum-val win-color' : 'cum-val wait-color';
+                        document.getElementById('lblTrigger').innerText = '当前目标'; document.getElementById('targetProp').innerText = S.macroTarget ? (S.macroTarget === 'D' ? '抓 [双]' : '抓 [单]') : "观望找特征"; document.getElementById('targetProp').className = S.macroTarget ? 'cum-val win-color' : 'cum-val wait-color';
                         document.getElementById('lblStreak').innerText = '宏观阵型'; document.getElementById('streakCount').innerText = S.history.length > 0 ? S.history.map(g => (g === 'BB' || g === 'PP') ? '双' : '单').slice(-3).join('') : '-'; document.getElementById('streakRate').style.display = 'none';
                         document.getElementById('lblProgress').innerText = '拉布谢尔无限循环追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else if (S.triggerMode === 'hand') {
@@ -353,7 +355,7 @@
                         document.getElementById('lblStreak').innerText = '攻击目标'; document.getElementById('streakCount').innerText = S.s3Target ? (S.s3Target==='B'?'0(庄)':'1(闲)') : '-'; document.getElementById('streakCount').className = S.s3Target ? (S.s3Target==='B'?'cum-val side-B':'cum-val side-P') : 'cum-val'; document.getElementById('streakRate').style.display = 'none';
                         document.getElementById('lblProgress').innerText = '连续手流水线追踪模式'; document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '无限';
                     } else {
-                        document.getElementById('lblTrigger').innerText = S.triggerMode === 3 ? '目标(3连触发)' : '目标(2连触发)'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'A (打0)':'B (打1)') : "无"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
+                        document.getElementById('lblTrigger').innerText = S.triggerMode === 3 ? '目标(3连特征)' : '目标(2连特征)'; document.getElementById('targetProp').innerText = S.targetProp ? (S.targetProp==='A'?'A(庄)':'B(闲)') : "无"; document.getElementById('targetProp').className = S.targetProp ? (S.targetProp==='A'?'cum-val side-B':'cum-val side-P') : 'cum-val wait-color';
                         if (S.bettingMode === 'fib' && S.triggerMode === 2) { document.getElementById('lblStreak').innerText = '注码周期盈亏'; document.getElementById('streakCount').innerText = S.sessionPL; document.getElementById('streakCount').className = S.sessionPL > 0 ? 'cum-val win-color' : (S.sessionPL < 0 ? 'cum-val loss-color' : 'cum-val'); document.getElementById('streakRate').style.display = 'none'; document.getElementById('lblProgress').innerText = '60组窗口进度 (局内正收益止盈)';
                         } else { document.getElementById('lblStreak').innerText = '连击层数'; document.getElementById('streakCount').innerText = S.streak; document.getElementById('streakCount').className = 'cum-val'; document.getElementById('streakRate').style.display = 'inline'; document.getElementById('lblProgress').innerText = '16组窗口进度'; }
                         if (S.gameStatus === 'WON' || S.gameStatus === 'STREAK_LIMIT') { document.getElementById('regFill').style.width = '100%'; document.getElementById('regPercent').innerText = '完成'; } else { let maxG = (S.bettingMode === 'fib' && S.triggerMode === 2) ? 60 : 16; let progress = Math.min((S.group - 1 + (S.hand===2?0.5:0)) / maxG * 100, 100); document.getElementById('regFill').style.width = progress + '%'; document.getElementById('regPercent').innerText = Math.floor(progress) + '%'; }
@@ -361,7 +363,7 @@
                 }
 
                 document.getElementById('betCount').innerText = (wins + losses);
-                document.getElementById('wlStatsText').innerText = `正: ${wins} | 负: ${losses} | 胜率: ${(wins+losses)>0 ? Math.round((wins/(wins+losses))*100):0}%`;
+                document.getElementById('wlStatsText').innerText = `胜: ${wins} | 负: ${losses} | 胜率: ${(wins+losses)>0 ? Math.round((wins/(wins+losses))*100):0}%`;
                 const wlList = document.getElementById('wlList'); wlList.innerHTML = (S.wlHistory || []).slice(-150).map(item => `<span class="${item==='✅'?'wl-item-win':'wl-item-loss'}">${item}</span>`).join(''); wlList.scrollTop = wlList.scrollHeight;
                 
                 const logBox = document.getElementById('sysLogBox');
